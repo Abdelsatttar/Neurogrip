@@ -6,7 +6,7 @@ import {
   Languages, Menu, Moon, Play, Plus, Settings, ShieldCheck, Sparkles, Sun, UserRound,
   Wifi, WifiOff, GraduationCap, MonitorPlay, Video,
   Zap, BookMarked, Stethoscope, Code2, LockKeyhole, LogOut, MessageCircle,
-  Eye, EyeOff, Mail, ArrowLeft, Camera, ImagePlus, Upload, Trash2, X, KeyRound,
+  Eye, EyeOff, Mail, ArrowLeft, Camera, Upload, Trash2, X, KeyRound,
 } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import SpecialistPortal from './SpecialistPortal'
