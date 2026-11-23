@@ -404,7 +404,6 @@ function LoginScreen({
     resetSubtitle: 'اكتب بريدك الإلكتروني وسنرسل لك رابطًا آمنًا لإعادة تعيين كلمة المرور.',
     newPassword: 'كلمة المرور الجديدة', savePassword: 'حفظ كلمة المرور الجديدة',
     back: 'العودة لتسجيل الدخول', google: 'المتابعة باستخدام Google',
-    googleHint: 'دخول آمن وسريع بحساب Google، من غير ما تحتاج كلمة مرور جديدة.',
     googleSetup: 'تسجيل Google لم يتم إعداده بعد.',
     googleTeamOnly: 'حسابات الدكتور والمطوّر تستخدم كود الدعوة وتسجيل الدخول بالبريد وكلمة المرور.',
     loading: 'جارٍ التنفيذ...', show: 'إظهار', hide: 'إخفاء',
@@ -449,7 +448,6 @@ function LoginScreen({
     resetSent: 'لو البريد مسجل لدينا، سيصلك رابط استعادة صالح لمدة 30 دقيقة.',
     resetComplete: 'تم تغيير كلمة المرور. جارٍ تسجيل دخولك...',
     noEmailService: 'استعادة كلمة المرور غير متاحة حتى يتم إعداد خدمة البريد.',
-    trust: 'لن نطلب منك كلمة مرور Google داخل NEUROGRIP.',
   } : {
     eyebrow: 'YOUR SECURE ACCOUNT SPACE',
     title: 'Welcome to NEUROGRIP',
@@ -468,7 +466,6 @@ function LoginScreen({
     resetSubtitle: 'Enter your email and we will send a secure, one-time password reset link.',
     newPassword: 'New password', savePassword: 'Save new password',
     back: 'Back to sign in', google: 'Continue with Google',
-    googleHint: 'Fast, secure access with your Google account. No new password needed.',
     googleSetup: 'Google sign-in has not been configured yet.',
     googleTeamOnly: 'Doctor and Developer accounts use an invitation code and email/password sign-in.',
     loading: 'Please wait...', show: 'Show', hide: 'Hide',
@@ -513,7 +510,6 @@ function LoginScreen({
     resetSent: 'If an account exists for that email, a reset link will arrive shortly. The link is valid for 30 minutes.',
     resetComplete: 'Your password has been updated. Signing you in...',
     noEmailService: 'Password recovery is unavailable until email delivery is configured.',
-    trust: 'NEUROGRIP will never ask for your Google password.',
   }
 
   useEffect(() => {
@@ -677,10 +673,8 @@ function LoginScreen({
                   <path fill="#FBBC05" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.2H5.8a20 20 0 0 0 0 17.6l6.8-5.2z"/>
                   <path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 5.9 29.5 4 24 4 16 4 9.2 8.5 5.8 15.2l6.8 5.2C14.2 15.6 18.7 12 24 12z"/>
                 </svg>
-                <span className="auth-google-button-copy"><strong>{labels.google}</strong><small>{isArabic ? 'دخول سريع وآمن بحسابك' : 'Fast and secure with your account'}</small></span>
-                <span className="auth-google-badge">{isArabic ? 'موصى به' : 'RECOMMENDED'}</span>
+                <span className="auth-google-button-copy"><strong>{labels.google}</strong></span>
               </button>
-              <p className="auth-google-caption">{providers.google ? labels.googleHint : labels.googleSetup} {labels.trust}</p>
               <div className="auth-divider auth-email-divider"><span>{isArabic ? 'أو سجّل بالبريد الإلكتروني' : 'OR SIGN IN WITH EMAIL'}</span></div>
             </div>
           )}
@@ -762,7 +756,6 @@ function LoginScreen({
                 </svg>
                 <span>{labels.google}</span>
               </button>
-              <p className="auth-google-caption">{providers.google ? labels.googleHint : labels.googleSetup} {labels.trust}</p>
             </div>
           )}
           {showRoles && role !== 'patient' && <p className="auth-team-note"><ShieldCheck size={15} />{labels.googleTeamOnly}</p>}
