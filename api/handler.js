@@ -247,7 +247,8 @@ function verifyOrigin(req) {
 async function handleRequest(req, res) {
   const sql = db();
   const url = new URL(req.url || "/", "https://neurogrip.local");
-  const pathname = url.pathname;
+  const forwardedPath = url.searchParams.get("path");
+  const pathname = forwardedPath ? "/api/" + (forwardedPath.startsWith("/") ? forwardedPath.slice(1) : forwardedPath) : url.pathname;
   const method = String(req.method || "GET").toUpperCase();
 
   if (pathname === "/api/health" && method === "GET") {
@@ -486,7 +487,8 @@ export default async function handler(req, res) {
     await ensureSchema();
     return await handleRequest(req, res);
   } catch (error) {
-    console.error("[neurogrip-api]", url.pathname, error && error.message ? error.message : "Request failed");
+    const routePath = url.searchParams.get("path");
+    console.error("[neurogrip-api]", routePath ? "/api/" + routePath : url.pathname, error && error.message ? error.message : "Request failed");
     const status = error && error.message === "Invalid JSON." ? 400 : 503;
     return sendJson(res, status, {
       error: status === 400 ? "Invalid JSON request." : "The account service is temporarily unavailable.",

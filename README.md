@@ -43,7 +43,7 @@ npm run build
 
 ## Production deployment on Vercel
 
-The `api/[...path].js` function handles the application's `/api/*` routes. It uses the Neon PostgreSQL connection supplied by the Vercel Neon integration. On its first request, it creates the required tables and indexes if they do not already exist.
+The `api/handler.js` function handles the application's `/api/*` routes. A Vercel rewrite sends every API path to this single function while preserving its route in a query parameter. The function uses the Neon PostgreSQL connection supplied by the Vercel Neon integration. On its first request, it creates the required tables and indexes if they do not already exist.
 
 The Vercel project must have these server-side environment variables:
 
