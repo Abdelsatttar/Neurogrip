@@ -23,7 +23,7 @@ Start the Vite frontend and the local development API:
 npm run dev
 ```
 
-Open `http://localhost:5173/`. Vite proxies `/api` requests to the local Node service on port 4000. The local service stores development accounts, support tickets, and notifications in `server/data/` JSON files. This file-based mode is only for local development; it is not used by the Vercel API.
+Open `http://localhost:5173/`. Vite proxies `/api` requests to the local Node service on port 4000. The local service stores development accounts, support tickets, and notifications in `server/data/` JSON files. This file-based mode is only for local development; it is not used by the Vercel API. The local service also stores the account's phone number and preferred hand. Google sign-in and email-based password recovery are production integrations and remain unavailable in this local file-based mode; use the Production deployment to test those flows.
 
 Doctor and Developer registration require local invitation codes. Copy `.env.example` to `.env`, fill in private values for both invitation codes, then run the app. `.env` is ignored by Git:
 
@@ -45,21 +45,52 @@ npm run build
 
 The `api/handler.js` function handles the application's `/api/*` routes. A Vercel rewrite sends every API path to this single function while preserving its route in a query parameter. The function uses the Neon PostgreSQL connection supplied by the Vercel Neon integration. On its first request, it creates the required tables and indexes if they do not already exist.
 
-The Vercel project must have these server-side environment variables:
+The Vercel project uses these server-side environment variables:
 
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | Neon PostgreSQL connection string, supplied by the integration |
-| `DOCTOR_INVITE_CODE` | Private invitation code for creating Doctor accounts |
-| `DEVELOPER_INVITE_CODE` | Private invitation code for creating Developer accounts |
+| `DOCTOR_INVITE_CODE` | Private invitation code for Doctor accounts |
+| `DEVELOPER_INVITE_CODE` | Private invitation code for Developer accounts |
+| `APP_BASE_URL` | Canonical production origin: `https://neurogrip-vert.vercel.app` |
+| `GOOGLE_CLIENT_ID` | Google OAuth Web application client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Web application client secret |
+| `GOOGLE_REDIRECT_URI` | `https://neurogrip-vert.vercel.app/api/auth/google/callback` |
+| `RESEND_API_KEY` | Resend API key used to send password recovery messages |
+| `EMAIL_FROM` | Sender address on a domain verified in Resend, e.g. `NEUROGRIP <no-reply@your-verified-domain.com>` |
 
-Set the invitation variables in Vercel Project Settings → Environment Variables for Production and Preview. Mark them as Sensitive/Encrypted. Never prefix secrets with `VITE_` and never place database credentials or invitation codes in frontend code. Redeploy after changing environment variables.
+The Neon connection variables are supplied by the Vercel integration. The invitation codes, Google client secret, and Resend API key must be stored as Sensitive/Encrypted Vercel Production variables. `APP_BASE_URL`, `GOOGLE_REDIRECT_URI`, and `EMAIL_FROM` are not secret. Never prefix secrets with `VITE_` and never put credentials in frontend code, Git, or chat messages.
+
+### Enable Google sign-in
+
+1. In Google Cloud Console, create or select a project and configure its OAuth consent screen.
+2. Create an OAuth 2.0 Client ID with application type **Web application**.
+3. Add this exact Authorized JavaScript origin: `https://neurogrip-vert.vercel.app`.
+4. Add this exact Authorized redirect URI: `https://neurogrip-vert.vercel.app/api/auth/google/callback`.
+5. Save the generated client ID as `GOOGLE_CLIENT_ID` and the client secret as `GOOGLE_CLIENT_SECRET` in Vercel Project Settings → Environment Variables → Production.
+
+Google sign-in creates Patient accounts. Existing verified Gmail/Google Workspace accounts may be linked to an account with the same email; accounts using other email domains must first sign in with their existing password. Doctor and Developer registration remains invitation-code controlled.
+
+### Enable password recovery email
+
+1. Add a domain you control in the Resend dashboard.
+2. Add the DNS records Resend provides to your domain provider and wait until the domain is verified.
+3. Create a Resend API key with permission to send mail.
+4. Add `RESEND_API_KEY` and `EMAIL_FROM` to Vercel Project Settings → Environment Variables → Production.
+5. Redeploy the Production deployment.
+
+Password recovery links are single-use, expire after 30 minutes, and are stored as hashes in PostgreSQL. The API returns a generic response to avoid revealing whether an email is registered. The reset form is part of the site's sign-in screen.
+
+After adding or changing environment variables, trigger a new Production deployment. Do not send these secret values to anyone.
 
 ## API routes
 
 - `GET /api/health` — API and database health check
+- `GET /api/auth/providers` — reports which optional sign-in providers are configured
 - `POST /api/auth/register`, `POST /api/auth/login`
-- `GET /api/auth/me`, `POST /api/auth/logout`
+- `GET /api/auth/me`, `POST /api/auth/logout`, `PATCH /api/auth/profile`
+- `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`
+- `POST /api/auth/google/start`, `GET /api/auth/google/callback`
 - `GET /api/{patient|doctor|developer}/workspace` — role-checked workspace access
 - `GET /api/notifications`, `POST /api/notifications/read-all`, `POST /api/notifications/:id/read`
 - `GET /api/support/tickets`, `POST /api/support/tickets`
@@ -71,7 +102,7 @@ Passwords are hashed on the server using scrypt with a random salt. Session toke
 
 The production database stores registered accounts, hashed credentials, hashed sessions, in-app notifications, and support requests/messages. Support visibility is role-checked: patients see their own requests, doctors can review requests, and developers can see only requests that the patient consented to share and that a doctor forwarded.
 
-Password reset, email ownership verification, external email/SMS delivery, and browser push notifications are not implemented. Patient profile preferences, learning progress, and demo device status remain browser-local. The clinical/specialist workspace prototype must not be treated as a medical record system.
+Email-based password recovery and Google OAuth are implemented in the production API. They stay unavailable until the corresponding Resend or Google OAuth variables are configured in Vercel. Email ownership verification for ordinary password registration, passwordless magic links, email/SMS notifications, and browser push notifications are not implemented. Account name, phone, and preferred hand are stored in PostgreSQL; language/theme preferences, learning progress, and demo device status remain browser-local. The clinical/specialist workspace prototype must not be treated as a medical record system.
 
 **Important:** NEUROGRIP is a graduation-project prototype, not a certified medical device or clinical information system. Do not enter real patient or other sensitive health information. Before any real-world clinical use, the project needs a formal privacy/security review, patient-to-doctor assignment rules, audit logging, backups, account recovery, and appropriate regulatory and clinical validation.
 

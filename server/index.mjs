@@ -35,7 +35,7 @@ function loadRegisteredAccounts() {
 const accounts = loadRegisteredAccounts()
 
 function persistRegisteredAccounts() {
-  const persisted = accounts.map(({ id, role, name, email, passwordRecord, createdAt }) => ({ id, role, name, email, passwordRecord, createdAt }))
+  const persisted = accounts.map(({ id, role, name, email, passwordRecord, createdAt, profile_phone, preferred_hand }) => ({ id, role, name, email, passwordRecord, createdAt, profile_phone, preferred_hand }))
   const temporaryFile = `${ACCOUNTS_FILE}.tmp`
   writeFileSync(temporaryFile, JSON.stringify(persisted, null, 2), { mode: 0o600 })
   renameSync(temporaryFile, ACCOUNTS_FILE)
@@ -100,7 +100,14 @@ function sessionCookie(token, maxAge) {
 }
 
 function publicUser(account) {
-  return { userId: account.id, role: account.role, name: account.name, email: account.email }
+  return {
+    userId: account.id,
+    role: account.role,
+    name: account.name,
+    email: account.email,
+    phone: account.profile_phone || '',
+    preferredHand: account.preferred_hand || 'right',
+  }
 }
 
 
@@ -224,6 +231,18 @@ const server = http.createServer(async (request, response) => {
   if (pathname === '/api/health' && request.method === 'GET') {
     return sendJson(response, 200, { ok: true, service: 'neurogrip-auth' })
   }
+  if (pathname === '/api/auth/providers' && request.method === 'GET') {
+    return sendJson(response, 200, { google: false, passwordReset: false })
+  }
+
+  if (['/api/auth/google/start', '/api/auth/forgot-password', '/api/auth/reset-password'].includes(pathname) && request.method === 'POST') {
+    const isGoogle = pathname === '/api/auth/google/start'
+    return sendJson(response, 503, {
+      code: isGoogle ? 'google_not_configured' : 'email_not_configured',
+      error: 'This feature is available in the production deployment after its provider is configured.',
+    })
+  }
+
 
   if (pathname === '/api/auth/login' && request.method === 'POST') {
     if (isLoginRateLimited(request)) return sendJson(response, 429, { error: 'Too many sign-in attempts. Try again in one minute.' })
@@ -253,7 +272,11 @@ const server = http.createServer(async (request, response) => {
       const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
       const password = typeof body.password === 'string' ? body.password : ''
       const inviteCode = typeof body.inviteCode === 'string' ? body.inviteCode.trim() : ''
+      const phone = cleanText(body.phone, 30)
+      const preferredHand = body.preferredHand === 'left' ? 'left' : body.preferredHand === 'right' ? 'right' : 'right'
       if (!['patient', 'doctor', 'developer'].includes(role)) return sendJson(response, 400, { code: 'invalid_role' })
+      if (body.acceptTerms !== true) return sendJson(response, 400, { code: 'terms_required' })
+      if (phone && !/^[+0-9().\s-]{7,30}$/.test(phone)) return sendJson(response, 400, { code: 'invalid_phone' })
       if (name.length < 2) return sendJson(response, 400, { code: 'invalid_name' })
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return sendJson(response, 400, { code: 'invalid_email' })
       if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) return sendJson(response, 400, { code: 'weak_password' })
@@ -266,6 +289,8 @@ const server = http.createServer(async (request, response) => {
         role,
         name,
         email,
+        profile_phone: phone || null,
+        preferred_hand: preferredHand,
         passwordRecord: makePasswordRecord(password),
         createdAt: new Date().toISOString(),
       }
@@ -285,6 +310,27 @@ const server = http.createServer(async (request, response) => {
     if (!user) return sendJson(response, 401, { error: 'Not signed in.' })
     return sendJson(response, 200, publicUser(user))
   }
+  if (pathname === '/api/auth/profile' && request.method === 'PATCH') {
+    const user = getSessionUser(request)
+    if (!user) return sendJson(response, 401, { error: 'Sign in required.' })
+    try {
+      const body = await readJson(request)
+      const name = cleanText(body.name, 80)
+      const phone = cleanText(body.phone, 30)
+      const preferredHand = body.preferredHand === 'left' ? 'left' : body.preferredHand === 'right' ? 'right' : null
+      if (name.length < 2) return sendJson(response, 400, { code: 'invalid_name' })
+      if (phone && !/^[+0-9().\s-]{7,30}$/.test(phone)) return sendJson(response, 400, { code: 'invalid_phone' })
+      if (!preferredHand) return sendJson(response, 400, { code: 'invalid_hand_preference' })
+      user.name = name
+      user.profile_phone = phone || null
+      user.preferred_hand = preferredHand
+      persistRegisteredAccounts()
+      return sendJson(response, 200, { user: publicUser(user) })
+    } catch {
+      return sendJson(response, 400, { code: 'invalid_profile' })
+    }
+  }
+
 
   if (pathname === '/api/auth/logout' && request.method === 'POST') {
     const token = getCookie(request, COOKIE_NAME)

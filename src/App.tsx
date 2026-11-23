@@ -6,6 +6,7 @@ import {
   Languages, Menu, Moon, Play, Plus, Settings, ShieldCheck, Sparkles, Sun, UserRound,
   Wifi, WifiOff, GraduationCap, MonitorPlay, Video,
   Zap, BookMarked, Stethoscope, Code2, LockKeyhole, LogOut, LogIn, MessageCircle,
+  Eye, EyeOff, Mail, ArrowLeft,
 } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import SpecialistPortal from './SpecialistPortal'
@@ -14,9 +15,10 @@ import SupportCenter from './SupportCenter'
 type Language = 'en' | 'ar'
 type Page = 'dashboard' | 'howToUse' | 'learning' | 'specialist' | 'support' | 'profile' | 'settings'
 type UserRole = 'patient' | 'doctor' | 'developer'
-type AuthSession = { userId: string; role: UserRole; name: string; email: string }
+type AuthSession = { userId: string; role: UserRole; name: string; email: string; phone?: string; preferredHand?: 'right' | 'left' }
 type AppNotification = { id: string; type: string; ticketId: string | null; subject: string; actorRole: UserRole | ''; createdAt: string; readAt: string | null }
-type Profile = { fullName: string; email: string; preferredHand: string; language: Language }
+type Profile = { fullName: string; email: string; phone: string; preferredHand: string; language: Language }
+type AuthProviders = { google: boolean; passwordReset: boolean }
 type BatteryState = { level: number; charging: boolean; source: 'demo' | 'device' }
 
 const dictionary: Record<Language, Record<string, string>> = {
@@ -70,9 +72,9 @@ const dictionary: Record<Language, Record<string, string>> = {
     sessionsTitle: 'My practice log', sessionsDesc: 'Review the attempts you chose to record during everyday activity practice.',
     noSessions: 'Your practice log is empty', noSessionsDesc: 'When you save an activity attempt, it will appear here so you can look back at your practice.',
     practiceAttempts: 'Recorded attempts', independentAttempts: 'Done independently', activitiesTried: 'Activities tried', activityOptions: 'activities to explore', practiceLogNote: 'These entries are self-reported notes saved in this browser. They are not device telemetry or a clinical assessment.', deleteAttempt: 'Delete this attempt', noAttemptsRecorded: 'No attempts have been recorded yet.', resultIndependent: 'Done independently', resultAssisted: 'Completed with help', resultNotYet: 'Not yet',
-    profileTitle: 'Your profile', profileDesc: 'Keep your personal preferences up to date. These details stay in this browser in this frontend preview.',
-    fullName: 'Full name', email: 'Email address', preferredHand: 'Preferred hand', rightHand: 'Right hand', leftHand: 'Left hand', saveChanges: 'Save changes', saved: 'Changes saved in this browser',
-    profilePrivacy: 'Only add information you are comfortable storing in this local preview. Your sign-in is handled by the local demo server.',
+    profileTitle: 'Your profile', profileDesc: 'Keep your account details and preferred hand up to date. Core profile details are saved to your NEUROGRIP account.',
+    fullName: 'Full name', email: 'Email address', phone: 'Phone number', preferredHand: 'Preferred hand', rightHand: 'Right hand', leftHand: 'Left hand', saveChanges: 'Save changes', saved: 'Account details saved',
+    profilePrivacy: 'Your name, phone number, and preferred hand are saved with your account. Do not add clinical records or sensitive medical details to this project prototype.',
     settingsTitle: 'Make NEUROGRIP feel right for you', settingsDesc: 'Adjust language and interface preferences for a more comfortable experience.',
     language: 'Language', english: 'English', arabic: 'العربية', appearance: 'Appearance', lightMode: 'Light mode', darkMode: 'Dark mode', switchToLight: 'Switch to light mode', switchToDark: 'Switch to dark mode', themeHelp: 'Choose the light or dark look for the whole website.', motion: 'Interface motion', motionDesc: 'Use subtle transitions and animated interactions.',
     enabled: 'Enabled', reduced: 'Reduced', accessibility: 'Accessibility', accessibilityDesc: 'The interface respects your device’s reduced-motion preference.',
@@ -137,9 +139,9 @@ const dictionary: Record<Language, Record<string, string>> = {
     sessionsTitle: 'سجل تدريبي', sessionsDesc: 'راجع المحاولات التي سجلتها أثناء التدريب على أنشطة الحياة اليومية.',
     noSessions: 'سجل التدريب فارغ', noSessionsDesc: 'لما تحفظ نتيجة نشاط، هتظهر هنا عشان تقدر تراجع محاولاتك السابقة.',
     practiceAttempts: 'عدد المحاولات المسجلة', independentAttempts: 'تمت بدون مساعدة', activitiesTried: 'الأنشطة التي جربتها', activityOptions: 'أنشطة متاحة', practiceLogNote: 'البيانات دي ملاحظات بتسجلها بنفسك وبتتحفظ على المتصفح ده فقط. مش بيانات مباشرة من الجهاز ولا تقييم طبي.', deleteAttempt: 'حذف المحاولة', noAttemptsRecorded: 'لم يتم تسجيل أي محاولات حتى الآن.', resultIndependent: 'تمت بدون مساعدة', resultAssisted: 'تمت بمساعدة', resultNotYet: 'لم تتم بعد',
-    profileTitle: 'ملفك الشخصي', profileDesc: 'حدّث تفضيلاتك الشخصية. تُحفظ هذه البيانات في هذا المتصفح ضمن النسخة التجريبية.',
-    fullName: 'الاسم بالكامل', email: 'البريد الإلكتروني', preferredHand: 'اليد المفضلة', rightHand: 'اليد اليمنى', leftHand: 'اليد اليسرى', saveChanges: 'حفظ التغييرات', saved: 'تم الحفظ في هذا المتصفح',
-    profilePrivacy: 'أضف فقط المعلومات التي ترغب في حفظها داخل هذه المعاينة المحلية. تتم إدارة تسجيل الدخول بواسطة الخادم التجريبي المحلي.',
+    profileTitle: 'ملفك الشخصي', profileDesc: 'حدّث بيانات حسابك واليد المفضلة. يتم حفظ بيانات الملف الأساسية مع حسابك على NEUROGRIP.',
+    fullName: 'الاسم بالكامل', email: 'البريد الإلكتروني', phone: 'رقم الهاتف', preferredHand: 'اليد المفضلة', rightHand: 'اليد اليمنى', leftHand: 'اليد اليسرى', saveChanges: 'حفظ التغييرات', saved: 'تم حفظ بيانات الحساب',
+    profilePrivacy: 'يتم حفظ الاسم ورقم الهاتف واليد المفضلة مع حسابك. لا تضف سجلات سريرية أو معلومات طبية حساسة إلى هذا النموذج التجريبي.',
     settingsTitle: 'اضبط NEUROGRIP كما يناسبك', settingsDesc: 'غيّر اللغة وتفضيلات الواجهة لتجربة أكثر راحة.',
     language: 'اللغة', english: 'English', arabic: 'العربية', appearance: 'المظهر', lightMode: 'الوضع الفاتح', darkMode: 'الوضع الداكن', switchToLight: 'التبديل إلى الوضع الفاتح', switchToDark: 'التبديل إلى الوضع الداكن', themeHelp: 'اختر المظهر الفاتح أو الداكن لتطبيقه على الموقع بالكامل.', motion: 'حركة الواجهة', motionDesc: 'استخدام انتقالات بسيطة وتفاعلات متحركة.',
     enabled: 'مفعّل', reduced: 'مخفّض', accessibility: 'إمكانية الوصول', accessibilityDesc: 'تحترم الواجهة إعداد تقليل الحركة الموجود على جهازك.',
@@ -196,9 +198,14 @@ function App() {
   const [loginTheme, setLoginTheme] = useState<'light' | 'dark'>(() => readStorage<'light' | 'dark'>('neurogrip-login-theme', 'light'))
   const [checkingSession, setCheckingSession] = useState(true)
   const [authServiceError, setAuthServiceError] = useState(false)
+  const [authProviders, setAuthProviders] = useState<AuthProviders>({ google: false, passwordReset: false })
 
   useEffect(() => {
     let active = true
+    fetch('/api/auth/providers', { cache: 'no-store' })
+      .then(async (response) => response.ok ? await response.json() as AuthProviders : null)
+      .then((providers) => { if (active && providers) setAuthProviders(providers) })
+      .catch(() => { /* Provider availability is checked again when an action is submitted. */ })
     fetch('/api/auth/me')
       .then(async (response) => {
         if (!response.ok) return null
@@ -246,7 +253,7 @@ function App() {
     }
   }
 
-  const register = async (details: { role: UserRole; name: string; email: string; password: string; inviteCode: string }): Promise<string | null> => {
+  const register = async (details: { role: UserRole; name: string; email: string; password: string; inviteCode: string; phone: string; preferredHand: 'right' | 'left'; acceptTerms: boolean }): Promise<string | null> => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -272,6 +279,51 @@ function App() {
     }
   }
 
+  const requestPasswordReset = async (email: string): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }),
+      })
+      const data = await response.json() as { code?: string }
+      if (!response.ok) return data.code || 'reset_request_failed'
+      return null
+    } catch {
+      setAuthServiceError(true)
+      return 'service_error'
+    }
+  }
+
+  const completePasswordReset = async (token: string, password: string): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, password }),
+      })
+      const data = await response.json() as { user?: AuthSession; code?: string }
+      if (!response.ok || !data.user) return data.code || 'reset_failed'
+      setSession(data.user)
+      setAuthServiceError(false)
+      return null
+    } catch {
+      setAuthServiceError(true)
+      return 'service_error'
+    }
+  }
+
+  const beginGoogleSignIn = async (acceptTerms: boolean): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/auth/google/start', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acceptTerms }),
+      })
+      const data = await response.json() as { url?: string; code?: string }
+      if (!response.ok || !data.url) return data.code || 'google_signin_failed'
+      window.location.assign(data.url)
+      return null
+    } catch {
+      setAuthServiceError(true)
+      return 'service_error'
+    }
+  }
+
   const logout = async () => {
     try { await fetch('/api/auth/logout', { method: 'POST' }) } catch { /* the local view still signs out */ }
     setSession(null)
@@ -282,49 +334,216 @@ function App() {
   return session ? (
     <WorkspaceApp key={session.userId} session={session} onLogout={logout} fallbackLanguage={loginLanguage} fallbackTheme={loginTheme} />
   ) : (
-    <LoginScreen language={loginLanguage} theme={loginTheme} onLanguageChange={setLoginLanguage} onThemeChange={setLoginTheme} onLogin={login} onRegister={register} serviceError={authServiceError} />
+    <LoginScreen
+      language={loginLanguage}
+      theme={loginTheme}
+      onLanguageChange={setLoginLanguage}
+      onThemeChange={setLoginTheme}
+      onLogin={login}
+      onRegister={register}
+      onForgotPassword={requestPasswordReset}
+      onResetPassword={completePasswordReset}
+      onGoogleSignIn={beginGoogleSignIn}
+      providers={authProviders}
+      serviceError={authServiceError}
+    />
   )
 }
 
-function LoginScreen({ language, theme, onLanguageChange, onThemeChange, onLogin, onRegister, serviceError }: {
+function LoginScreen({
+  language, theme, onLanguageChange, onThemeChange, onLogin, onRegister,
+  onForgotPassword, onResetPassword, onGoogleSignIn, providers, serviceError,
+}: {
   language: Language
   theme: 'light' | 'dark'
   onLanguageChange: (language: Language) => void
   onThemeChange: (theme: 'light' | 'dark') => void
   onLogin: (role: UserRole, email: string, password: string) => Promise<boolean | null>
-  onRegister: (details: { role: UserRole; name: string; email: string; password: string; inviteCode: string }) => Promise<string | null>
+  onRegister: (details: {
+    role: UserRole; name: string; email: string; password: string; inviteCode: string;
+    phone: string; preferredHand: 'right' | 'left'; acceptTerms: boolean
+  }) => Promise<string | null>
+  onForgotPassword: (email: string) => Promise<string | null>
+  onResetPassword: (token: string, password: string) => Promise<string | null>
+  onGoogleSignIn: (acceptTerms: boolean) => Promise<string | null>
+  providers: AuthProviders
   serviceError: boolean
 }) {
   const isArabic = language === 'ar'
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>('login')
   const [role, setRole] = useState<UserRole>('patient')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [preferredHand, setPreferredHand] = useState<'right' | 'left'>('right')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [inviteCode, setInviteCode] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
   const labels = isArabic ? {
-    eyebrow: 'بوابة الدخول', title: 'مرحبًا بك في NEUROGRIP', subtitle: 'اختار نوع الحساب وسجّل الدخول للمساحة الخاصة بيك.',
-    patient: 'المريض', patientDesc: 'التعلم والتدريب ومتابعة اليد', doctor: 'الدكتور', doctorDesc: 'الحالات والتقارير والمتابعة الطبية',
-    developer: 'المطوّر', developerDesc: 'تشخيص الجهاز والحساسات', name: 'الاسم بالكامل', email: 'البريد الإلكتروني', password: 'كلمة المرور', confirmPassword: 'تأكيد كلمة المرور', inviteCode: 'كود الدعوة',
-    login: 'تسجيل الدخول', register: 'إنشاء حساب', switchRegister: 'ليس لديك حساب؟ إنشاء حساب جديد', switchLogin: 'لديك حساب بالفعل؟ تسجيل الدخول', invalid: 'بيانات الدخول غير صحيحة لهذا النوع من الحسابات.',
+    eyebrow: 'مساحة حسابك الآمنة',
+    title: 'مرحبًا بك في NEUROGRIP',
+    subtitle: 'حساب واحد يوصّلك لتجربة اليد الصناعية، التعلّم، والمتابعة.',
+    patient: 'المريض', patientDesc: 'التعلّم والتدريب ومتابعة اليد',
+    doctor: 'الدكتور', doctorDesc: 'الحالات والتقارير والمتابعة',
+    developer: 'المطوّر', developerDesc: 'تشخيص الجهاز والحساسات',
+    name: 'الاسم بالكامل', email: 'البريد الإلكتروني', phone: 'رقم الهاتف (اختياري)',
+    password: 'كلمة المرور', confirmPassword: 'تأكيد كلمة المرور',
+    inviteCode: 'كود دعوة الفريق', preferredHand: 'اليد المفضّلة',
+    rightHand: 'اليمنى', leftHand: 'اليسرى',
+    login: 'تسجيل الدخول', register: 'إنشاء حساب', forgot: 'نسيت كلمة المرور؟',
+    switchRegister: 'ليس لديك حساب؟ أنشئ حسابًا جديدًا',
+    switchLogin: 'لديك حساب بالفعل؟ سجّل الدخول',
+    sendReset: 'إرسال رابط الاستعادة', resetTitle: 'استعادة كلمة المرور',
+    resetSubtitle: 'اكتب بريدك الإلكتروني وسنرسل لك رابطًا آمنًا لإعادة تعيين كلمة المرور.',
+    newPassword: 'كلمة المرور الجديدة', savePassword: 'حفظ كلمة المرور الجديدة',
+    back: 'العودة لتسجيل الدخول', google: 'المتابعة باستخدام Google',
+    googleHint: 'دخول Google ينشئ حساب مريض جديدًا، أو يفتح حسابًا مرتبطًا بالفعل.',
+    googleSetup: 'تسجيل Google لم يتم إعداده بعد.',
+    googleTeamOnly: 'حسابات الدكتور والمطوّر تستخدم كود الدعوة وتسجيل الدخول بالبريد وكلمة المرور.',
+    loading: 'جارٍ التنفيذ...', show: 'إظهار', hide: 'إخفاء',
+    strength: 'قوة كلمة المرور', weak: 'ضعيفة', medium: 'متوسطة', strong: 'قوية',
+    terms: 'أوافق على شروط استخدام NEUROGRIP وإشعار الخصوصية، وأفهم أن المنصة نموذج تخرّج وليست نظامًا طبيًا معتمدًا.',
+    inviteHint: 'كود الدعوة يمنح صلاحية إنشاء حساب فريق. لا تشاركه مع أي شخص غير مصرح له.',
     roleNote: 'اختار نوع حسابك للوصول إلى المساحة المناسبة.',
-    language: 'English', themeLight: 'فاتح', themeDark: 'داكن',
-    serviceError: 'خدمة الحسابات غير متاحة حاليًا. حاول مرة أخرى بعد قليل.',
-    loading: 'جارٍ المعالجة...', inviteHint: 'حساب الدكتور والمطوّر يحتاج كود دعوة من مسؤول المشروع.',
-    errors: { rate_limited: 'محاولات كثيرة. انتظر دقيقة وحاول مرة أخرى.', invalid_name: 'اكتب الاسم بالكامل.', invalid_email: 'اكتب بريدًا إلكترونيًا صحيحًا.', weak_password: 'كلمة المرور يجب ألا تقل عن 8 أحرف.', email_exists: 'هذا البريد مسجل بالفعل. جرّب تسجيل الدخول.', invalid_invite: 'كود الدعوة غير صحيح لهذا الدور.', invite_not_configured: 'تسجيل هذا النوع غير مفعّل بعد. تواصل مع مسؤول المشروع.', invalid_role: 'نوع الحساب غير صحيح.', invalid_registration: 'تعذّر إنشاء الحساب. راجع البيانات وحاول مرة أخرى.', registration_failed: 'تعذّر إكمال التسجيل. حاول مرة أخرى.', password_mismatch: 'كلمتا المرور غير متطابقتين.', service_error: 'خدمة الحسابات غير متاحة حاليًا. حاول مرة أخرى بعد قليل.', service_unavailable: 'خدمة الحسابات وقاعدة البيانات غير متاحة حاليًا. حاول مرة أخرى بعد قليل.' } as Record<string, string>,
+    brandPoints: ['حساب شخصي لكل مستخدم', 'جلسات دخول آمنة', 'مساحات منفصلة حسب الدور'],
+    errors: {
+      invalid_login: 'بيانات الدخول غير صحيحة لهذا النوع من الحسابات.',
+      invalid_name: 'اكتب اسمًا صحيحًا من حرفين على الأقل.',
+      invalid_email: 'اكتب بريدًا إلكترونيًا صحيحًا.',
+      invalid_phone: 'رقم الهاتف غير صحيح. استخدم أرقامًا دولية أو محلية.',
+      weak_password: 'كلمة المرور يجب ألا تقل عن 8 أحرف.',
+      email_exists: 'هذا البريد مسجل بالفعل. جرّب تسجيل الدخول.',
+      invalid_invite: 'كود الدعوة غير صحيح لهذا الدور.',
+      invite_not_configured: 'تسجيل هذا النوع غير مفعّل بعد. تواصل مع مسؤول المشروع.',
+      invalid_role: 'نوع الحساب غير صحيح.',
+      invalid_registration: 'تعذّر إنشاء الحساب. راجع البيانات وحاول مرة أخرى.',
+      registration_failed: 'تعذّر إكمال التسجيل. حاول مرة أخرى.',
+      password_mismatch: 'كلمتا المرور غير متطابقتين.',
+      terms_required: 'يجب الموافقة على الشروط وإشعار الخصوصية للمتابعة.',
+      rate_limited: 'محاولات كثيرة. انتظر دقيقة ثم حاول مرة أخرى.',
+      email_not_configured: 'خدمة إرسال البريد لم يتم إعدادها بعد. تواصل مع مسؤول المشروع.',
+      email_delivery_failed: 'تعذّر إرسال البريد الآن. حاول مرة أخرى لاحقًا.',
+      reset_request_failed: 'تعذّر طلب استعادة كلمة المرور.',
+      reset_token_invalid: 'رابط الاستعادة غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا.',
+      reset_failed: 'تعذّر تغيير كلمة المرور. اطلب رابط استعادة جديدًا.',
+      google_not_configured: 'تسجيل الدخول باستخدام Google يحتاج إلى إعداد من مسؤول المشروع.',
+      google_signin_failed: 'تعذّر بدء تسجيل Google.',
+      google_cancelled: 'تم إلغاء تسجيل الدخول باستخدام Google.',
+      google_state_invalid: 'تعذّر التحقق من جلسة Google. حاول مرة أخرى.',
+      google_state_expired: 'انتهت صلاحية محاولة تسجيل Google. ابدأ من جديد.',
+      google_exchange_failed: 'تعذّر إكمال الاتصال بحساب Google.',
+      google_link_requires_password: 'هذا البريد مسجّل مسبقًا. سجّل الدخول بكلمة المرور أولًا.',
+      google_account_conflict: 'حساب Google مرتبط بحساب آخر بالفعل.',
+      google_account_unavailable: 'تعذّر فتح الحساب المرتبط بـGoogle.',
+      google_failed: 'تعذّر إكمال تسجيل Google. حاول مرة أخرى.',
+      service_error: 'خدمة الحسابات غير متاحة حاليًا. حاول مرة أخرى بعد قليل.',
+    } as Record<string, string>,
+    resetSent: 'لو البريد مسجل لدينا، سيصلك رابط استعادة صالح لمدة 30 دقيقة.',
+    resetComplete: 'تم تغيير كلمة المرور. جارٍ تسجيل دخولك...',
+    noEmailService: 'استعادة كلمة المرور غير متاحة حتى يتم إعداد خدمة البريد.',
+    trust: 'لن نطلب منك كلمة مرور Google داخل NEUROGRIP.',
   } : {
-    eyebrow: 'ROLE-BASED ACCESS', title: 'Welcome to NEUROGRIP', subtitle: 'Choose your account type and sign in to your own workspace.',
-    patient: 'Patient', patientDesc: 'Learning, practice, and hand status', doctor: 'Doctor', doctorDesc: 'Cases, reports, and clinical follow-up',
-    developer: 'Developer', developerDesc: 'Device and sensor diagnostics', name: 'Full name', email: 'Email address', password: 'Password', confirmPassword: 'Confirm password', inviteCode: 'Invitation code',
-    login: 'Sign in', register: 'Create account', switchRegister: 'New to NEUROGRIP? Create an account', switchLogin: 'Already have an account? Sign in', invalid: 'The sign-in details do not match this account type.',
+    eyebrow: 'YOUR SECURE ACCOUNT SPACE',
+    title: 'Welcome to NEUROGRIP',
+    subtitle: 'One account for your prosthetic-hand learning, support, and progress.',
+    patient: 'Patient', patientDesc: 'Learning, practice, and hand status',
+    doctor: 'Doctor', doctorDesc: 'Cases, reports, and follow-up',
+    developer: 'Developer', developerDesc: 'Device and sensor diagnostics',
+    name: 'Full name', email: 'Email address', phone: 'Phone number (optional)',
+    password: 'Password', confirmPassword: 'Confirm password',
+    inviteCode: 'Team invitation code', preferredHand: 'Preferred hand',
+    rightHand: 'Right', leftHand: 'Left',
+    login: 'Sign in', register: 'Create account', forgot: 'Forgot password?',
+    switchRegister: 'New to NEUROGRIP? Create an account',
+    switchLogin: 'Already have an account? Sign in',
+    sendReset: 'Send recovery link', resetTitle: 'Reset your password',
+    resetSubtitle: 'Enter your email and we will send a secure, one-time password reset link.',
+    newPassword: 'New password', savePassword: 'Save new password',
+    back: 'Back to sign in', google: 'Continue with Google',
+    googleHint: 'Create a patient account with Google, or continue to an account already linked to Google.',
+    googleSetup: 'Google sign-in has not been configured yet.',
+    googleTeamOnly: 'Doctor and Developer accounts use an invitation code and email/password sign-in.',
+    loading: 'Please wait...', show: 'Show', hide: 'Hide',
+    strength: 'Password strength', weak: 'Weak', medium: 'Medium', strong: 'Strong',
+    terms: 'I agree to the NEUROGRIP Terms of Use and Privacy Notice, and understand this is a graduation-project prototype, not a certified medical system.',
+    inviteHint: 'The invitation code grants team-account access. Only use a code supplied by the project administrator.',
     roleNote: 'Choose your account type to open the correct workspace.',
-    language: 'العربية', themeLight: 'Light', themeDark: 'Dark',
-    serviceError: 'The account service is temporarily unavailable. Please try again shortly.',
-    loading: 'Please wait...', inviteHint: 'Doctor and Developer registrations require an invitation code from the project administrator.',
-    errors: { rate_limited: 'Too many attempts. Wait one minute and try again.', invalid_name: 'Enter your full name.', invalid_email: 'Enter a valid email address.', weak_password: 'Password must be at least 8 characters.', email_exists: 'This email is already registered. Try signing in.', invalid_invite: 'The invitation code is not valid for this role.', invite_not_configured: 'Registration for this role is not configured yet. Contact the project administrator.', invalid_role: 'The selected account type is invalid.', invalid_registration: 'Could not create the account. Check the details and try again.', registration_failed: 'Registration could not be completed. Please try again.', password_mismatch: 'The passwords do not match.', service_error: 'The account service is temporarily unavailable.', service_unavailable: 'The account service or database is temporarily unavailable. Please try again shortly.' } as Record<string, string>,
+    brandPoints: ['A personal account for every user', 'Secure, persistent sign-in sessions', 'Separate workspaces by role'],
+    errors: {
+      invalid_login: 'The sign-in details do not match this account type.',
+      invalid_name: 'Enter a valid name with at least two characters.',
+      invalid_email: 'Enter a valid email address.',
+      invalid_phone: 'Enter a valid phone number.',
+      weak_password: 'Password must be at least 8 characters.',
+      email_exists: 'This email is already registered. Try signing in.',
+      invalid_invite: 'The invitation code is not valid for this role.',
+      invite_not_configured: 'Registration for this role is not configured yet. Contact the project administrator.',
+      invalid_role: 'The selected account type is invalid.',
+      invalid_registration: 'Could not create the account. Check the details and try again.',
+      registration_failed: 'Registration could not be completed. Please try again.',
+      password_mismatch: 'The passwords do not match.',
+      terms_required: 'Accept the terms and privacy notice to continue.',
+      rate_limited: 'Too many attempts. Wait one minute and try again.',
+      email_not_configured: 'Password recovery email has not been configured yet. Contact the project administrator.',
+      email_delivery_failed: 'We could not send the email right now. Please try again later.',
+      reset_request_failed: 'Could not request a password reset.',
+      reset_token_invalid: 'This reset link is invalid or expired. Request a new link.',
+      reset_failed: 'Could not change the password. Request a new reset link.',
+      google_not_configured: 'Google sign-in needs to be configured by the project administrator.',
+      google_signin_failed: 'Could not start Google sign-in.',
+      google_cancelled: 'Google sign-in was cancelled.',
+      google_state_invalid: 'We could not validate the Google sign-in session. Please try again.',
+      google_state_expired: 'The Google sign-in request expired. Please start again.',
+      google_exchange_failed: 'We could not complete the connection with Google.',
+      google_link_requires_password: 'This email already has an account. Sign in with your password first.',
+      google_account_conflict: 'This Google account is already linked to a different account.',
+      google_account_unavailable: 'We could not open the Google-linked account.',
+      google_failed: 'Google sign-in could not be completed. Please try again.',
+      service_error: 'The account service is temporarily unavailable. Please try again shortly.',
+    } as Record<string, string>,
+    resetSent: 'If an account exists for that email, a reset link will arrive shortly. The link is valid for 30 minutes.',
+    resetComplete: 'Your password has been updated. Signing you in...',
+    noEmailService: 'Password recovery is unavailable until email delivery is configured.',
+    trust: 'NEUROGRIP will never ask for your Google password.',
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const authError = params.get('authError')
+    if (authError) setError(authError)
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const token = hashParams.get('reset')
+    if (token) {
+      setResetToken(token)
+      setMode('reset')
+      setNotice('')
+    }
+    if (authError || token || params.has('auth')) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [])
+
+  const passwordRules = [
+    password.length >= 8,
+    /[a-z]/.test(password),
+    /[A-Z]/.test(password),
+    /\d/.test(password),
+    /[^a-zA-Z0-9]/.test(password),
+  ]
+  const strength = passwordRules.filter(Boolean).length
+  const strengthText = strength <= 2 ? labels.weak : strength <= 4 ? labels.medium : labels.strong
+  const errorText = error === 'invalid_login' ? labels.errors.invalid_login : (labels.errors[error] || error)
+
+  const clearFeedback = () => {
+    setError('')
+    setNotice('')
   }
   const chooseRole = (nextRole: UserRole) => {
     setRole(nextRole)
@@ -332,38 +551,89 @@ function LoginScreen({ language, theme, onLanguageChange, onThemeChange, onLogin
     setPassword('')
     setConfirmPassword('')
     setInviteCode('')
-    setError('')
+    clearFeedback()
   }
-  const changeMode = (nextMode: 'login' | 'register') => {
+  const changeMode = (nextMode: 'login' | 'register' | 'forgot' | 'reset') => {
     setMode(nextMode)
-    setEmail('')
-    setName('')
     setPassword('')
     setConfirmPassword('')
     setInviteCode('')
-    setError('')
+    clearFeedback()
   }
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSubmitting(true)
-    setError('')
-    if (mode === 'login') {
-      const result = await onLogin(role, email, password)
-      setError(result === false ? 'invalid_login' : '')
-    } else if (password !== confirmPassword) {
-      setError('password_mismatch')
-    } else {
-      const result = await onRegister({ role, name, email, password, inviteCode })
-      setError(result || '')
+    clearFeedback()
+    try {
+      if (mode === 'login') {
+        const result = await onLogin(role, email, password)
+        if (result === false) setError('invalid_login')
+        else if (result === null) setError('service_error')
+      } else if (mode === 'register') {
+        if (password !== confirmPassword) {
+          setError('password_mismatch')
+          return
+        }
+        if (!termsAccepted) {
+          setError('terms_required')
+          return
+        }
+        const result = await onRegister({
+          role, name, email, password, inviteCode, phone, preferredHand, acceptTerms: termsAccepted,
+        })
+        if (result) setError(result)
+      } else if (mode === 'forgot') {
+        const result = await onForgotPassword(email)
+        if (result) setError(result)
+        else setNotice(labels.resetSent)
+      } else if (mode === 'reset') {
+        if (password !== confirmPassword) {
+          setError('password_mismatch')
+          return
+        }
+        const result = await onResetPassword(resetToken, password)
+        if (result) setError(result)
+        else setNotice(labels.resetComplete)
+      }
+    } finally {
+      setSubmitting(false)
     }
+  }
+
+  const handleGoogleSignIn = async () => {
+    clearFeedback()
+    if (!termsAccepted) {
+      setError('terms_required')
+      return
+    }
+    if (!providers.google) {
+      setError('google_not_configured')
+      return
+    }
+    setSubmitting(true)
+    const result = await onGoogleSignIn(termsAccepted)
+    if (result) setError(result)
     setSubmitting(false)
   }
-  const errorText = error === 'invalid_login' ? labels.invalid : (labels.errors[error] || error)
+
+  const showRoles = mode === 'login' || mode === 'register'
+  const showGoogle = showRoles && role === 'patient'
+  const currentTitle = mode === 'login'
+    ? (isArabic ? 'سجّل الدخول إلى حسابك' : 'Sign in to your account')
+    : mode === 'register'
+      ? (isArabic ? 'ابدأ حسابك الجديد' : 'Create your NEUROGRIP account')
+      : mode === 'forgot' ? labels.resetTitle : (isArabic ? 'اختار كلمة مرور جديدة' : 'Choose a new password')
+  const currentSubtitle = mode === 'login'
+    ? labels.roleNote
+    : mode === 'register'
+      ? (isArabic ? 'أدخل بياناتك الأساسية لتجهيز مساحتك الشخصية.' : 'Add a few details to personalize your account.')
+      : mode === 'forgot' ? labels.resetSubtitle : (isArabic ? 'استخدم كلمة مرور قوية لم تستخدمها من قبل.' : 'Choose a strong password you have not used before.')
 
   return (
     <div className={`auth-screen ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`} dir={isArabic ? 'rtl' : 'ltr'}>
       <div className="auth-toolbar">
-        <button type="button" onClick={() => onLanguageChange(isArabic ? 'en' : 'ar')}><Globe2 size={16} />{labels.language}</button>
+        <button type="button" onClick={() => onLanguageChange(isArabic ? 'en' : 'ar')}><Globe2 size={16} />{labels.language === 'English' ? 'English' : 'العربية'}</button>
         <button type="button" onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}{theme === 'dark' ? labels.themeLight : labels.themeDark}</button>
       </div>
       <div className="auth-layout">
@@ -373,26 +643,107 @@ function LoginScreen({ language, theme, onLanguageChange, onThemeChange, onLogin
           <span className="auth-eyebrow">{labels.eyebrow}</span>
           <h1>{labels.title}</h1>
           <p>{labels.subtitle}</p>
-          <div className="auth-brand-art"><img src="/assets/prosthetic-hero.png" alt="" /></div>
-        </section>
-        <section className="auth-card">
-          <div className="auth-card-heading"><span className="auth-lock-icon"><LockKeyhole size={19} /></span><div><h2>{mode === 'login' ? (isArabic ? 'تسجيل الدخول' : 'Sign in to continue') : (isArabic ? 'إنشاء حساب جديد' : 'Create your account')}</h2><p>{labels.roleNote}</p></div></div>
-          <div className="auth-role-grid" role="group" aria-label={isArabic ? 'نوع الحساب' : 'Account type'}>
-            <button type="button" className={`auth-role-card ${role === 'patient' ? 'selected' : ''}`} onClick={() => chooseRole('patient')} aria-pressed={role === 'patient'}><UserRound size={21} /><strong>{labels.patient}</strong><small>{labels.patientDesc}</small></button>
-            <button type="button" className={`auth-role-card ${role === 'doctor' ? 'selected' : ''}`} onClick={() => chooseRole('doctor')} aria-pressed={role === 'doctor'}><Stethoscope size={21} /><strong>{labels.doctor}</strong><small>{labels.doctorDesc}</small></button>
-            <button type="button" className={`auth-role-card ${role === 'developer' ? 'selected' : ''}`} onClick={() => chooseRole('developer')} aria-pressed={role === 'developer'}><Code2 size={21} /><strong>{labels.developer}</strong><small>{labels.developerDesc}</small></button>
+          <div className="auth-brand-points">
+            {labels.brandPoints.map((point) => <div className="auth-brand-point" key={point}><CheckCircle2 size={16} /><span>{point}</span></div>)}
           </div>
+          <div className="auth-brand-art"><img src="/assets/prosthetic-hero.png" alt="" /></div>
+          <div className="auth-brand-footer"><ShieldCheck size={15} /><span>NEUROGRIP · EMG SMART PROSTHETIC</span></div>
+        </section>
+
+        <section className={`auth-card ${mode === 'register' ? 'auth-card-register' : ''}`}>
+          <div className="auth-card-heading">
+            <span className="auth-lock-icon">{mode === 'forgot' || mode === 'reset' ? <Mail size={19} /> : <LockKeyhole size={19} />}</span>
+            <div><span className="auth-card-kicker">NEUROGRIP / ACCOUNT</span><h2>{currentTitle}</h2><p>{currentSubtitle}</p></div>
+          </div>
+
+          {showRoles && (
+            <div className="auth-role-grid" role="group" aria-label={isArabic ? 'نوع الحساب' : 'Account type'}>
+              <button type="button" className={`auth-role-card ${role === 'patient' ? 'selected' : ''}`} onClick={() => chooseRole('patient')} aria-pressed={role === 'patient'}><UserRound size={21} /><strong>{labels.patient}</strong><small>{labels.patientDesc}</small></button>
+              <button type="button" className={`auth-role-card ${role === 'doctor' ? 'selected' : ''}`} onClick={() => chooseRole('doctor')} aria-pressed={role === 'doctor'}><Stethoscope size={21} /><strong>{labels.doctor}</strong><small>{labels.doctorDesc}</small></button>
+              <button type="button" className={`auth-role-card ${role === 'developer' ? 'selected' : ''}`} onClick={() => chooseRole('developer')} aria-pressed={role === 'developer'}><Code2 size={21} /><strong>{labels.developer}</strong><small>{labels.developerDesc}</small></button>
+            </div>
+          )}
+
           <form className="auth-form" onSubmit={submit}>
-            {mode === 'register' && <label>{labels.name}<input type="text" autoComplete="name" minLength={2} maxLength={80} required value={name} onChange={(event) => setName(event.target.value)} /></label>}
-            <label>{labels.email}<input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-            <label>{labels.password}<input type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={mode === 'register' ? 8 : undefined} required value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-            {mode === 'register' && <label>{labels.confirmPassword}<input type="password" autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} /></label>}
-            {mode === 'register' && role !== 'patient' && <label>{labels.inviteCode}<input type="password" autoComplete="off" required value={inviteCode} onChange={(event) => setInviteCode(event.target.value)} /><small className="auth-field-hint">{labels.inviteHint}</small></label>}
-            {error && <div className="auth-error" role="alert">{errorText}</div>}
-            {serviceError && <div className="auth-error" role="alert">{labels.serviceError}</div>}
-            <button className="auth-submit" type="submit" disabled={submitting}>{mode === 'login' ? <LogIn size={17} /> : <UserRound size={17} />}{submitting ? labels.loading : mode === 'login' ? labels.login : labels.register}</button>
+            {mode === 'register' && (
+              <div className="auth-field-grid">
+                <label>{labels.name}<input type="text" autoComplete="name" minLength={2} maxLength={80} required value={name} onChange={(event) => setName(event.target.value)} placeholder={isArabic ? 'مثال: أحمد محمد' : 'e.g. Ahmed Mohamed'} /></label>
+                <label>{labels.phone}<input type="tel" autoComplete="tel" maxLength={30} value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+20 1xx xxx xxxx" /></label>
+              </div>
+            )}
+            {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
+              <label>{labels.email}<input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" /></label>
+            )}
+            {mode === 'register' && (
+              <label>{labels.preferredHand}
+                <select value={preferredHand} onChange={(event) => setPreferredHand(event.target.value as 'right' | 'left')}>
+                  <option value="right">{labels.rightHand}</option><option value="left">{labels.leftHand}</option>
+                </select>
+              </label>
+            )}
+            {(mode === 'login' || mode === 'register' || mode === 'reset') && (
+              <>
+                <label>{mode === 'reset' ? labels.newPassword : labels.password}
+                  <div className="auth-password-field">
+                    <input type={showPassword ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={mode === 'login' ? undefined : 8} required value={password} onChange={(event) => setPassword(event.target.value)} />
+                    <button type="button" aria-label={showPassword ? labels.hide : labels.show} onClick={() => setShowPassword((current) => !current)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
+                  </div>
+                  {mode !== 'login' && password.length > 0 && (
+                    <div className="auth-password-strength" aria-live="polite">
+                      <div className="auth-strength-bars">{[1, 2, 3, 4, 5].map((step) => <span key={step} className={strength >= step ? `filled level-${strength}` : ''} />)}</div>
+                      <small>{labels.strength}: {strengthText}</small>
+                    </div>
+                  )}
+                </label>
+                {(mode === 'register' || mode === 'reset') && (
+                  <label>{labels.confirmPassword}
+                    <input type="password" autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
+                  </label>
+                )}
+              </>
+            )}
+            {mode === 'register' && role !== 'patient' && (
+              <label>{labels.inviteCode}<input type="password" autoComplete="off" required value={inviteCode} onChange={(event) => setInviteCode(event.target.value)} /><small className="auth-field-hint">{labels.inviteHint}</small></label>
+            )}
+
+            {(mode === 'register' || (mode === 'login' && showGoogle)) && (
+              <label className="auth-terms-row">
+                <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
+                <span>{labels.terms}</span>
+              </label>
+            )}
+
+            {mode === 'login' && (
+              <div className="auth-form-meta"><span>{isArabic ? 'محمي بتشفير الجلسات' : 'Protected with secure sessions'}</span><button type="button" onClick={() => changeMode('forgot')}>{labels.forgot}</button></div>
+            )}
+            {mode === 'forgot' && !providers.passwordReset && <div className="auth-info-note"><Info size={16} /><span>{labels.noEmailService}</span></div>}
+            {mode === 'forgot' && providers.passwordReset && <div className="auth-info-note"><Mail size={16} /><span>{isArabic ? 'سنرسل رابطًا صالحًا لمرة واحدة وينتهي بعد 30 دقيقة.' : 'We will send a one-time link that expires after 30 minutes.'}</span></div>}
+
+            {error && <div className="auth-error" role="alert">{labels.errors[error] || error}</div>}
+            {serviceError && <div className="auth-error" role="alert">{labels.errors.service_error}</div>}
+            {notice && <div className="auth-success-note" role="status"><CheckCircle2 size={17} /><span>{notice}</span></div>}
+
+            <button className="auth-submit" type="submit" disabled={submitting || (mode === 'forgot' && !providers.passwordReset)}>
+              {submitting ? labels.loading : mode === 'login' ? labels.login : mode === 'register' ? labels.register : mode === 'forgot' ? labels.sendReset : labels.savePassword}
+              {!submitting && <ArrowRight size={17} />}
+            </button>
           </form>
-          <button type="button" className="auth-mode-toggle" onClick={() => changeMode(mode === 'login' ? 'register' : 'login')}>{mode === 'login' ? labels.switchRegister : labels.switchLogin}</button>
+
+          {showGoogle && (
+            <>
+              <div className="auth-divider"><span>{isArabic ? 'أو تابع باستخدام' : 'OR CONTINUE WITH'}</span></div>
+              <button type="button" className="auth-google-button" onClick={handleGoogleSignIn} disabled={submitting || !providers.google} title={!providers.google ? labels.googleSetup : ''}>
+                <span className="auth-google-mark">G</span><span>{labels.google}</span>
+              </button>
+              <p className="auth-google-caption">{providers.google ? labels.googleHint : labels.googleSetup} {labels.trust}</p>
+            </>
+          )}
+          {showRoles && role !== 'patient' && <p className="auth-team-note"><ShieldCheck size={15} />{labels.googleTeamOnly}</p>}
+
+          {mode === 'login' && <button type="button" className="auth-mode-toggle" onClick={() => changeMode('register')}>{labels.switchRegister}</button>}
+          {mode === 'register' && <button type="button" className="auth-mode-toggle" onClick={() => changeMode('login')}>{labels.switchLogin}</button>}
+          {(mode === 'forgot' || mode === 'reset') && <button type="button" className="auth-mode-toggle auth-back-button" onClick={() => changeMode('login')}><ArrowLeft size={15} />{labels.back}</button>}
+          {mode === 'forgot' && <p className="auth-reset-footnote">{isArabic ? 'لأمانك، لا نكشف ما إذا كان البريد مسجلًا أم لا.' : 'For your privacy, we never reveal whether an email is registered.'}</p>}
         </section>
       </div>
     </div>
@@ -414,9 +765,19 @@ function WorkspaceApp({ session, onLogout, fallbackLanguage, fallbackTheme }: {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [activeSupportTicketId, setActiveSupportTicketId] = useState<string | null>(null)
-  const [profile, setProfile] = useState<Profile>(() => readStorage<Profile>(accountStorageKey('profile'), { fullName: session.name, email: session.email, preferredHand: 'right', language: fallbackLanguage }))
+  const [profile, setProfile] = useState<Profile>(() => {
+    const stored = readStorage<Partial<Profile>>(accountStorageKey('profile'), {})
+    return {
+      fullName: stored.fullName ?? session.name,
+      email: stored.email ?? session.email,
+      phone: stored.phone ?? session.phone ?? '',
+      preferredHand: stored.preferredHand ?? session.preferredHand ?? 'right',
+      language: stored.language ?? fallbackLanguage,
+    }
+  })
   const [completedLessons, setCompletedLessons] = useState<string[]>(() => readStorage<string[]>(accountStorageKey('completed-lessons'), []))
   const [saved, setSaved] = useState(false)
+  const [profileError, setProfileError] = useState('')
   const [motionEnabled, setMotionEnabled] = useState(true)
   const [battery, setBattery] = useState<BatteryState>(() => {
     const storedLevel = readStorage<number>(accountStorageKey('battery-level'), 78)
@@ -474,6 +835,33 @@ function WorkspaceApp({ session, onLogout, fallbackLanguage, fallbackTheme }: {
   const motionOff = Boolean(reduceMotion) || !motionEnabled
   const transition = motionOff ? { duration: 0 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const }
   const initials = useMemo(() => profile.fullName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join(''), [profile.fullName])
+
+  const saveProfile = async () => {
+    setProfileError('')
+    setSaved(false)
+    try {
+      const response = await fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: profile.fullName, phone: profile.phone, preferredHand: profile.preferredHand }),
+      })
+      if (!response.ok) {
+        setProfileError(language === 'ar' ? 'تعذّر حفظ بيانات الحساب. راجع الاسم ورقم الهاتف وحاول مرة أخرى.' : 'Could not save your account details. Check your name and phone number, then try again.')
+        return
+      }
+      const data = await response.json() as { user?: AuthSession }
+      if (data.user) {
+        setProfile((current) => ({
+          ...current, fullName: data.user!.name, phone: data.user!.phone || '',
+          preferredHand: data.user!.preferredHand || 'right',
+        }))
+      }
+      setSaved(true)
+      window.setTimeout(() => setSaved(false), 2600)
+    } catch {
+      setProfileError(language === 'ar' ? 'تعذّر الاتصال بخدمة الحسابات.' : 'Could not reach the account service.')
+    }
+  }
 
   const goTo = (page: Page) => {
     if (session.role === 'patient' && page === 'specialist') return
@@ -619,7 +1007,7 @@ function WorkspaceApp({ session, onLogout, fallbackLanguage, fallbackTheme }: {
               {activePage === 'learning' && <LearningCenter t={t} />}
               {activePage === 'specialist' && session.role !== 'patient' && <SpecialistPortal role={session.role} userId={session.userId} language={language} batteryLevel={battery.level} batterySource={battery.source} />}
               {activePage === 'support' && <SupportCenter role={session.role} userId={session.userId} language={language} initialTicketId={activeSupportTicketId} />}
-              {activePage === 'profile' && <ProfilePage t={t} profile={profile} setProfile={setProfile} saved={saved} onSave={() => { setSaved(true); window.setTimeout(() => setSaved(false), 2600) }} />}
+              {activePage === 'profile' && <ProfilePage t={t} profile={profile} setProfile={setProfile} saved={saved} error={profileError} onSave={saveProfile} />}
               {activePage === 'settings' && <SettingsPage t={t} language={language} setLanguage={setLanguage} theme={theme} setTheme={setTheme} motionEnabled={motionEnabled} setMotionEnabled={setMotionEnabled} />}
             </motion.div>
           </AnimatePresence>
@@ -763,10 +1151,33 @@ function BatteryFeature({ t, battery, onBatteryLevelChange, onChargingChange, co
   )
 }
 
-function ProfilePage({ t, profile, setProfile, saved, onSave }: { t: (key: string) => string; profile: Profile; setProfile: Dispatch<SetStateAction<Profile>>; saved: boolean; onSave: () => void }) {
+function ProfilePage({ t, profile, setProfile, saved, error, onSave }: {
+  t: (key: string) => string
+  profile: Profile
+  setProfile: Dispatch<SetStateAction<Profile>>
+  saved: boolean
+  error: string
+  onSave: () => void
+}) {
   return <>
     <PageHeading title={t('profileTitle')} desc={t('profileDesc')} t={t} />
-    <div className="profile-layout"><section className="profile-card"><div className="profile-card-heading"><div className="profile-avatar-large">{profile.fullName.trim() ? profile.fullName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') : <UserRound size={30} />}</div><div><span className="section-kicker">{t('personalInformation')}</span><h2>{profile.fullName || t('placeholderName')}</h2><p>{profile.email || t('placeholderEmail')}</p></div></div><form onSubmit={(event) => { event.preventDefault(); onSave() }} className="profile-form"><label>{t('fullName')}<input value={profile.fullName} onChange={(event) => setProfile((current) => ({ ...current, fullName: event.target.value }))} placeholder={t('fullName')} /></label><label>{t('email')}<input type="email" value={profile.email} onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))} placeholder="name@example.com" /></label><label>{t('preferredHand')}<select value={profile.preferredHand} onChange={(event) => setProfile((current) => ({ ...current, preferredHand: event.target.value }))}><option value="right">{t('rightHand')}</option><option value="left">{t('leftHand')}</option></select></label><div className="profile-form-footer"><button className="primary-button" type="submit"><Check size={16} />{t('saveChanges')}</button>{saved && <span className="saved-message"><CheckCircle2 size={15} />{t('saved')}</span>}</div></form></section><aside className="profile-side-note"><div className="note-icon"><ShieldCheck size={22} /></div><h3>{t('account')}</h3><p>{t('profilePrivacy')}</p><div className="profile-note-line"><span>{t('language')}</span><strong>{profile.language === 'ar' ? t('arabic') : t('english')}</strong></div></aside></div>
+    <div className="profile-layout">
+      <section className="profile-card">
+        <div className="profile-card-heading">
+          <div className="profile-avatar-large">{profile.fullName.trim() ? profile.fullName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') : <UserRound size={30} />}</div>
+          <div><span className="section-kicker">{t('personalInformation')}</span><h2>{profile.fullName || t('placeholderName')}</h2><p>{profile.email || t('placeholderEmail')}</p></div>
+        </div>
+        <form onSubmit={(event) => { event.preventDefault(); onSave() }} className="profile-form">
+          <label>{t('fullName')}<input required minLength={2} maxLength={80} value={profile.fullName} onChange={(event) => setProfile((current) => ({ ...current, fullName: event.target.value }))} placeholder={t('fullName')} /></label>
+          <label>{t('email')}<input type="email" value={profile.email} disabled readOnly title={t('email')} /></label>
+          <label>{t('phone')}<input type="tel" maxLength={30} value={profile.phone} onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))} placeholder="+20 1xx xxx xxxx" /></label>
+          <label>{t('preferredHand')}<select value={profile.preferredHand} onChange={(event) => setProfile((current) => ({ ...current, preferredHand: event.target.value }))}><option value="right">{t('rightHand')}</option><option value="left">{t('leftHand')}</option></select></label>
+          {error && <div className="auth-error" role="alert">{error}</div>}
+          <div className="profile-form-footer"><button className="primary-button" type="submit"><Check size={16} />{t('saveChanges')}</button>{saved && <span className="saved-message"><CheckCircle2 size={15} />{t('saved')}</span>}</div>
+        </form>
+      </section>
+      <aside className="profile-side-note"><div className="note-icon"><ShieldCheck size={22} /></div><h3>{t('account')}</h3><p>{t('profilePrivacy')}</p><div className="profile-note-line"><span>{t('language')}</span><strong>{profile.language === 'ar' ? t('arabic') : t('english')}</strong></div></aside>
+    </div>
   </>
 }
 
