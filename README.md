@@ -59,7 +59,7 @@ The Vercel project uses these server-side environment variables:
 | `RESEND_API_KEY` | Resend API key used to send password recovery messages |
 | `EMAIL_FROM` | Sender address on a domain verified in Resend, e.g. `NEUROGRIP <no-reply@your-verified-domain.com>` |
 
-The Neon connection variables are supplied by the Vercel integration. The invitation codes, Google client secret, and Resend API key must be stored as Sensitive/Encrypted Vercel Production variables. `APP_BASE_URL`, `GOOGLE_REDIRECT_URI`, and `EMAIL_FROM` are not secret. Never prefix secrets with `VITE_` and never put credentials in frontend code, Git, or chat messages.
+The Neon connection variables are supplied by the Vercel integration. The invitation codes, Google client secret, Apps Script shared secret, and Resend API key must be stored as Sensitive/Encrypted Vercel Production variables. `APP_BASE_URL`, `GOOGLE_REDIRECT_URI`, the Apps Script URL, and `EMAIL_FROM` are not secret. Never prefix secrets with `VITE_` and never put credentials in frontend code, Git, or chat messages.
 
 ### Enable Google sign-in
 
@@ -71,17 +71,20 @@ The Neon connection variables are supplied by the Vercel integration. The invita
 
 Google sign-in creates Patient accounts. Existing verified Gmail/Google Workspace accounts may be linked to an account with the same email; accounts using other email domains must first sign in with their existing password. Doctor and Developer registration remains invitation-code controlled.
 
-### Enable password recovery email
+### Enable password recovery email without buying a domain
 
-1. Add a domain you control in the Resend dashboard.
-2. Add the DNS records Resend provides to your domain provider and wait until the domain is verified.
-3. Create a Resend API key with permission to send mail.
-4. Add `RESEND_API_KEY` and `EMAIL_FROM` to Vercel Project Settings → Environment Variables → Production.
-5. Redeploy the Production deployment.
+NEUROGRIP supports a Google Apps Script mailer that sends through the Gmail account that owns the script. This is suitable for a graduation-project prototype and does not require a custom domain, Resend, SMTP credentials, or a new npm dependency.
 
-Password recovery links are single-use, expire after 30 minutes, and are stored as hashes in PostgreSQL. The API returns a generic response to avoid revealing whether an email is registered. The reset form is part of the site's sign-in screen.
+1. Open [Google Apps Script](https://script.google.com/) and create a new project.
+2. Copy the code from `scripts/google-apps-script-mailer.gs` into the script editor and save it.
+3. In **Project Settings → Script Properties**, add `NEUROGRIP_MAIL_SECRET` with a long random secret (at least 32 characters). Use the exact same secret in Vercel; never commit it or send it in chat.
+4. Click **Deploy → New deployment → Web app**. Set **Execute as** to **Me** and **Who has access** to **Anyone**, then deploy and approve the MailApp permission request.
+5. Copy the Web app URL ending in `/exec`. In Vercel Project Settings → Environment Variables → Production, add `GOOGLE_APPS_SCRIPT_URL` and `GOOGLE_APPS_SCRIPT_SECRET`.
+6. Redeploy Production. Verify `GET /api/auth/providers` returns `"passwordReset":true`, then test Forgot Password using an account you own.
 
-After adding or changing environment variables, trigger a new Production deployment. Do not send these secret values to anyone.
+The script checks the shared secret before sending. It sends as the Google account that owns the Apps Script deployment. Google currently lists a daily limit of 100 email recipients for consumer Gmail accounts; quotas may change. Use this as a low-volume prototype mailer, not a bulk email service.
+
+Resend remains available as an alternative when a verified sender domain is configured. If both providers are configured, Google Apps Script is selected first.
 
 ## API routes
 
@@ -102,7 +105,7 @@ Passwords are hashed on the server using scrypt with a random salt. Session toke
 
 The production database stores registered accounts, hashed credentials, hashed sessions, in-app notifications, and support requests/messages. Support visibility is role-checked: patients see their own requests, doctors can review requests, and developers can see only requests that the patient consented to share and that a doctor forwarded.
 
-Email-based password recovery and Google OAuth are implemented in the production API. They stay unavailable until the corresponding Resend or Google OAuth variables are configured in Vercel. Email ownership verification for ordinary password registration, passwordless magic links, email/SMS notifications, and browser push notifications are not implemented. Account name, phone, and preferred hand are stored in PostgreSQL; language/theme preferences, learning progress, and demo device status remain browser-local. The clinical/specialist workspace prototype must not be treated as a medical record system.
+Email-based password recovery and Google OAuth are implemented in the production API. They stay unavailable until the corresponding Google OAuth or email provider variables are configured in Vercel. Password recovery can use the domain-free Google Apps Script mailer or Resend with a verified sender domain. Email ownership verification for ordinary password registration, passwordless magic links, email/SMS notifications, and browser push notifications are not implemented. Account name, phone, and preferred hand are stored in PostgreSQL; language/theme preferences, learning progress, and demo device status remain browser-local. The clinical/specialist workspace prototype must not be treated as a medical record system.
 
 **Important:** NEUROGRIP is a graduation-project prototype, not a certified medical device or clinical information system. Do not enter real patient or other sensitive health information. Before any real-world clinical use, the project needs a formal privacy/security review, patient-to-doctor assignment rules, audit logging, backups, account recovery, and appropriate regulatory and clinical validation.
 
