@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronRight, CircleHelp, Globe2, Hand, Home, Info,
   Languages, Menu, Moon, Play, Plus, Settings, ShieldCheck, Sparkles, Sun, UserRound,
   Wifi, WifiOff, GraduationCap, MonitorPlay, Video,
-  Zap, BookMarked, Stethoscope, Code2, LockKeyhole, LogOut, LogIn, MessageCircle,
+  Zap, BookMarked, Stethoscope, Code2, LockKeyhole, LogOut, MessageCircle,
   Eye, EyeOff, Mail, ArrowLeft,
 } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
@@ -408,6 +408,7 @@ function LoginScreen({
     googleSetup: 'تسجيل Google لم يتم إعداده بعد.',
     googleTeamOnly: 'حسابات الدكتور والمطوّر تستخدم كود الدعوة وتسجيل الدخول بالبريد وكلمة المرور.',
     loading: 'جارٍ التنفيذ...', show: 'إظهار', hide: 'إخفاء',
+    language: 'English', themeLight: 'الوضع الفاتح', themeDark: 'الوضع الداكن',
     strength: 'قوة كلمة المرور', weak: 'ضعيفة', medium: 'متوسطة', strong: 'قوية',
     terms: 'أوافق على شروط استخدام NEUROGRIP وإشعار الخصوصية، وأفهم أن المنصة نموذج تخرّج وليست نظامًا طبيًا معتمدًا.',
     inviteHint: 'كود الدعوة يمنح صلاحية إنشاء حساب فريق. لا تشاركه مع أي شخص غير مصرح له.',
@@ -471,6 +472,7 @@ function LoginScreen({
     googleSetup: 'Google sign-in has not been configured yet.',
     googleTeamOnly: 'Doctor and Developer accounts use an invitation code and email/password sign-in.',
     loading: 'Please wait...', show: 'Show', hide: 'Hide',
+    language: 'العربية', themeLight: 'Light', themeDark: 'Dark',
     strength: 'Password strength', weak: 'Weak', medium: 'Medium', strong: 'Strong',
     terms: 'I agree to the NEUROGRIP Terms of Use and Privacy Notice, and understand this is a graduation-project prototype, not a certified medical system.',
     inviteHint: 'The invitation code grants team-account access. Only use a code supplied by the project administrator.',
@@ -539,8 +541,6 @@ function LoginScreen({
   ]
   const strength = passwordRules.filter(Boolean).length
   const strengthText = strength <= 2 ? labels.weak : strength <= 4 ? labels.medium : labels.strong
-  const errorText = error === 'invalid_login' ? labels.errors.invalid_login : (labels.errors[error] || error)
-
   const clearFeedback = () => {
     setError('')
     setNotice('')
