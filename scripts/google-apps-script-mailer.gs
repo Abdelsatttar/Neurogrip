@@ -32,7 +32,7 @@ function doPost(event) {
     const html = String(payload.html || "");
     const text = String(payload.text || "");
 
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(to) || !subject || (!html && !text)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) || !subject || (!html && !text)) {
       return jsonOutput({ ok: false, code: "invalid_message" });
     }
 
