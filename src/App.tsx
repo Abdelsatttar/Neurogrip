@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Dispatch, FormEvent, SetStateAction } from 'react'
+import type { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react'
 import {
   Activity, ArrowRight, ArrowUpRight, Bell, Battery, BatteryCharging, BookOpen, Check, CheckCircle2,
   ChevronDown, ChevronRight, CircleHelp, Globe2, Hand, Home, Info,
@@ -1217,7 +1217,7 @@ function BatteryFeature({ t, battery, onBatteryLevelChange, onChargingChange, co
 }
 
 async function optimizeProfilePhoto(file: File): Promise<string> {
-  if (!/^image\\/(jpeg|png|webp)$/i.test(file.type) || file.size > 5 * 1024 * 1024) {
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type) || file.size > 5 * 1024 * 1024) {
     throw new Error('invalid_photo')
   }
   const bitmap = await createImageBitmap(file)
@@ -1293,7 +1293,7 @@ function ProfilePage({ t, profile, setProfile, saved, error, onSave, onChangePas
       .then((data) => { if (active && data) setAvatar(data.avatar || '') })
       .catch(() => { if (active) setAvatarError(t('photoUploadFailed')) })
     return () => { active = false }
-  }, [t])
+  }, [])
 
   useEffect(() => {
     if (!cameraOpen) return
@@ -1326,7 +1326,7 @@ function ProfilePage({ t, profile, setProfile, saved, error, onSave, onChangePas
       active = false
       stream?.getTracks().forEach((track) => track.stop())
     }
-  }, [cameraOpen, t])
+  }, [cameraOpen])
 
   const saveAvatar = async (dataUrl: string) => {
     setAvatarBusy(true)
@@ -1353,7 +1353,7 @@ function ProfilePage({ t, profile, setProfile, saved, error, onSave, onChangePas
     }
   }
 
-  const handleFileSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelection = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
