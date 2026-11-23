@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Dispatch, FormEvent, SetStateAction } from 'react'
 import {
   Activity, ArrowRight, ArrowUpRight, Bell, Battery, BatteryCharging, BookOpen, Check, CheckCircle2,
@@ -6,7 +6,7 @@ import {
   Languages, Menu, Moon, Play, Plus, Settings, ShieldCheck, Sparkles, Sun, UserRound,
   Wifi, WifiOff, GraduationCap, MonitorPlay, Video,
   Zap, BookMarked, Stethoscope, Code2, LockKeyhole, LogOut, MessageCircle,
-  Eye, EyeOff, Mail, ArrowLeft,
+  Eye, EyeOff, Mail, ArrowLeft, Camera, ImagePlus, Upload, Trash2, X, KeyRound,
 } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import SpecialistPortal from './SpecialistPortal'
@@ -75,6 +75,21 @@ const dictionary: Record<Language, Record<string, string>> = {
     profileTitle: 'Your profile', profileDesc: 'Keep your account details and preferred hand up to date. Core profile details are saved to your NEUROGRIP account.',
     fullName: 'Full name', email: 'Email address', phone: 'Phone number', preferredHand: 'Preferred hand', rightHand: 'Right hand', leftHand: 'Left hand', saveChanges: 'Save changes', saved: 'Account details saved',
     profilePrivacy: 'Your name, phone number, and preferred hand are saved with your account. Do not add clinical records or sensitive medical details to this project prototype.',
+    profilePhoto: 'Profile photo', profilePhotoHint: 'Choose a photo or take one with your camera. JPG, PNG, or WebP, up to 5 MB.',
+    uploadPhoto: 'Upload photo', takePhoto: 'Take a photo', removePhoto: 'Remove photo', savePhoto: 'Save photo',
+    cameraTitle: 'Take a profile photo', capturePhoto: 'Capture photo', cameraCancel: 'Cancel',
+    cameraUnavailable: 'Camera access is unavailable. Check your browser permission or upload a photo instead.',
+    avatarSaved: 'Profile photo updated.', avatarRemoved: 'Profile photo removed.', avatarTooLarge: 'Choose a smaller image. The optimized photo must be under 150 KB.',
+    invalidPhoto: 'Choose a JPG, PNG, or WebP image up to 5 MB.', photoUploadFailed: 'Could not upload the photo. Please try again.',
+    passwordSecurity: 'Password & security', changePassword: 'Change password',
+    currentPassword: 'Current password', newPassword: 'New password', confirmNewPassword: 'Confirm new password',
+    passwordUpdated: 'Password changed successfully. Other signed-in sessions were ended.',
+    passwordCurrentInvalid: 'The current password is incorrect.', passwordNotSet: 'This account uses Google sign-in and has no password yet. Use Forgot password on the sign-in screen to create one.',
+    passwordSame: 'Choose a password different from your current one.', passwordWeak: 'Use at least 8 characters for your new password.',
+    passwordMismatch: 'The new passwords do not match.', passwordChangeFailed: 'Could not change the password. Please try again.',
+    passwordChangeHint: 'Confirm your current password before choosing a new one. Other devices will need to sign in again.',
+    updatePassword: 'Update password', passwordRequired: 'Enter your current password.',
+
     settingsTitle: 'Make NEUROGRIP feel right for you', settingsDesc: 'Adjust language and interface preferences for a more comfortable experience.',
     language: 'Language', english: 'English', arabic: 'العربية', appearance: 'Appearance', lightMode: 'Light mode', darkMode: 'Dark mode', switchToLight: 'Switch to light mode', switchToDark: 'Switch to dark mode', themeHelp: 'Choose the light or dark look for the whole website.', motion: 'Interface motion', motionDesc: 'Use subtle transitions and animated interactions.',
     enabled: 'Enabled', reduced: 'Reduced', accessibility: 'Accessibility', accessibilityDesc: 'The interface respects your device’s reduced-motion preference.',
@@ -142,6 +157,21 @@ const dictionary: Record<Language, Record<string, string>> = {
     profileTitle: 'ملفك الشخصي', profileDesc: 'حدّث بيانات حسابك واليد المفضلة. يتم حفظ بيانات الملف الأساسية مع حسابك على NEUROGRIP.',
     fullName: 'الاسم بالكامل', email: 'البريد الإلكتروني', phone: 'رقم الهاتف', preferredHand: 'اليد المفضلة', rightHand: 'اليد اليمنى', leftHand: 'اليد اليسرى', saveChanges: 'حفظ التغييرات', saved: 'تم حفظ بيانات الحساب',
     profilePrivacy: 'يتم حفظ الاسم ورقم الهاتف واليد المفضلة مع حسابك. لا تضف سجلات سريرية أو معلومات طبية حساسة إلى هذا النموذج التجريبي.',
+    profilePhoto: 'الصورة الشخصية', profilePhotoHint: 'ارفع صورة أو التقط واحدة بالكاميرا. JPG أو PNG أو WebP، بحد أقصى 5 ميجابايت.',
+    uploadPhoto: 'رفع صورة', takePhoto: 'التقاط صورة', removePhoto: 'حذف الصورة', savePhoto: 'حفظ الصورة',
+    cameraTitle: 'التقاط صورة شخصية', capturePhoto: 'التقاط', cameraCancel: 'إلغاء',
+    cameraUnavailable: 'الكاميرا غير متاحة. راجع صلاحيات المتصفح أو ارفع صورة من جهازك.',
+    avatarSaved: 'تم تحديث الصورة الشخصية.', avatarRemoved: 'تم حذف الصورة الشخصية.', avatarTooLarge: 'اختر صورة أصغر. يجب ألا يتجاوز حجم الصورة بعد ضغطها 150 كيلوبايت.',
+    invalidPhoto: 'اختر صورة JPG أو PNG أو WebP لا يتجاوز حجمها 5 ميجابايت.', photoUploadFailed: 'تعذّر رفع الصورة. حاول مرة أخرى.',
+    passwordSecurity: 'كلمة المرور والأمان', changePassword: 'تغيير كلمة المرور',
+    currentPassword: 'كلمة المرور الحالية', newPassword: 'كلمة المرور الجديدة', confirmNewPassword: 'تأكيد كلمة المرور الجديدة',
+    passwordUpdated: 'تم تغيير كلمة المرور بنجاح. تم إنهاء جلسات الدخول على الأجهزة الأخرى.',
+    passwordCurrentInvalid: 'كلمة المرور الحالية غير صحيحة.', passwordNotSet: 'هذا الحساب يستخدم Google وليس له كلمة مرور بعد. استخدم «نسيت كلمة المرور» من شاشة الدخول لإنشاء كلمة مرور.',
+    passwordSame: 'اختر كلمة مرور مختلفة عن الحالية.', passwordWeak: 'استخدم 8 أحرف على الأقل لكلمة المرور الجديدة.',
+    passwordMismatch: 'كلمتا المرور الجديدتان غير متطابقتين.', passwordChangeFailed: 'تعذّر تغيير كلمة المرور. حاول مرة أخرى.',
+    passwordChangeHint: 'أكد كلمة المرور الحالية قبل اختيار كلمة جديدة. ستحتاج الأجهزة الأخرى إلى تسجيل الدخول مرة أخرى.',
+    updatePassword: 'تحديث كلمة المرور', passwordRequired: 'أدخل كلمة المرور الحالية.',
+
     settingsTitle: 'اضبط NEUROGRIP كما يناسبك', settingsDesc: 'غيّر اللغة وتفضيلات الواجهة لتجربة أكثر راحة.',
     language: 'اللغة', english: 'English', arabic: 'العربية', appearance: 'المظهر', lightMode: 'الوضع الفاتح', darkMode: 'الوضع الداكن', switchToLight: 'التبديل إلى الوضع الفاتح', switchToDark: 'التبديل إلى الوضع الداكن', themeHelp: 'اختر المظهر الفاتح أو الداكن لتطبيقه على الموقع بالكامل.', motion: 'حركة الواجهة', motionDesc: 'استخدام انتقالات بسيطة وتفاعلات متحركة.',
     enabled: 'مفعّل', reduced: 'مخفّض', accessibility: 'إمكانية الوصول', accessibilityDesc: 'تحترم الواجهة إعداد تقليل الحركة الموجود على جهازك.',
@@ -856,6 +886,21 @@ function WorkspaceApp({ session, onLogout, fallbackLanguage, fallbackTheme }: {
   const transition = motionOff ? { duration: 0 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const }
   const initials = useMemo(() => profile.fullName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join(''), [profile.fullName])
 
+  const changeAccountPassword = async (currentPassword: string, newPassword: string): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      })
+      if (response.ok) return null
+      const data = await response.json() as { code?: string }
+      return data.code || 'password_change_failed'
+    } catch {
+      return 'password_change_failed'
+    }
+  }
+
   const saveProfile = async () => {
     setProfileError('')
     setSaved(false)
@@ -1027,7 +1072,7 @@ function WorkspaceApp({ session, onLogout, fallbackLanguage, fallbackTheme }: {
               {activePage === 'learning' && <LearningCenter t={t} />}
               {activePage === 'specialist' && session.role !== 'patient' && <SpecialistPortal role={session.role} userId={session.userId} language={language} batteryLevel={battery.level} batterySource={battery.source} />}
               {activePage === 'support' && <SupportCenter role={session.role} userId={session.userId} language={language} initialTicketId={activeSupportTicketId} />}
-              {activePage === 'profile' && <ProfilePage t={t} profile={profile} setProfile={setProfile} saved={saved} error={profileError} onSave={saveProfile} />}
+              {activePage === 'profile' && <ProfilePage t={t} profile={profile} setProfile={setProfile} saved={saved} error={profileError} onSave={saveProfile} onChangePassword={changeAccountPassword} />}
               {activePage === 'settings' && <SettingsPage t={t} language={language} setLanguage={setLanguage} theme={theme} setTheme={setTheme} motionEnabled={motionEnabled} setMotionEnabled={setMotionEnabled} />}
             </motion.div>
           </AnimatePresence>
@@ -1171,35 +1216,292 @@ function BatteryFeature({ t, battery, onBatteryLevelChange, onChargingChange, co
   )
 }
 
-function ProfilePage({ t, profile, setProfile, saved, error, onSave }: {
+async function optimizeProfilePhoto(file: File): Promise<string> {
+  if (!/^image\\/(jpeg|png|webp)$/i.test(file.type) || file.size > 5 * 1024 * 1024) {
+    throw new Error('invalid_photo')
+  }
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.min(1, 512 / Math.max(bitmap.width, bitmap.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+  const context = canvas.getContext('2d')
+  if (!context) {
+    bitmap.close()
+    throw new Error('photo_processing_failed')
+  }
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  for (const quality of [0.84, 0.76, 0.68, 0.58, 0.48]) {
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+    if (blob && blob.size <= 150 * 1024) {
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('photo_processing_failed'))
+        reader.onerror = () => reject(new Error('photo_processing_failed'))
+        reader.readAsDataURL(blob)
+      })
+    }
+  }
+  throw new Error('avatar_too_large')
+}
+
+async function optimizeCameraCanvas(canvas: HTMLCanvasElement): Promise<string> {
+  for (const quality of [0.84, 0.76, 0.68, 0.58, 0.48]) {
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+    if (blob && blob.size <= 150 * 1024) {
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('photo_processing_failed'))
+        reader.onerror = () => reject(new Error('photo_processing_failed'))
+        reader.readAsDataURL(blob)
+      })
+    }
+  }
+  throw new Error('avatar_too_large')
+}
+
+function ProfilePage({ t, profile, setProfile, saved, error, onSave, onChangePassword }: {
   t: (key: string) => string
   profile: Profile
   setProfile: Dispatch<SetStateAction<Profile>>
   saved: boolean
   error: string
   onSave: () => void
+  onChangePassword: (currentPassword: string, newPassword: string) => Promise<string | null>
 }) {
+  const [avatar, setAvatar] = useState('')
+  const [avatarBusy, setAvatarBusy] = useState(false)
+  const [avatarError, setAvatarError] = useState('')
+  const [avatarNotice, setAvatarNotice] = useState('')
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraError, setCameraError] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
+  const [passwordBusy, setPasswordBusy] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordNotice, setPasswordNotice] = useState('')
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const initials = profile.fullName.trim().split(/\\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('')
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/auth/avatar', { cache: 'no-store' })
+      .then(async (response) => response.ok ? await response.json() as { avatar?: string } : null)
+      .then((data) => { if (active && data) setAvatar(data.avatar || '') })
+      .catch(() => { if (active) setAvatarError(t('photoUploadFailed')) })
+    return () => { active = false }
+  }, [t])
+
+  useEffect(() => {
+    if (!cameraOpen) return
+    let active = true
+    let stream: MediaStream | null = null
+    const openCamera = async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) throw new Error('camera_unavailable')
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
+        })
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop())
+          return
+        }
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          await videoRef.current.play().catch(() => undefined)
+        }
+      } catch {
+        if (active) {
+          setCameraError(t('cameraUnavailable'))
+          setCameraOpen(false)
+        }
+      }
+    }
+    void openCamera()
+    return () => {
+      active = false
+      stream?.getTracks().forEach((track) => track.stop())
+    }
+  }, [cameraOpen, t])
+
+  const saveAvatar = async (dataUrl: string) => {
+    setAvatarBusy(true)
+    setAvatarError('')
+    setAvatarNotice('')
+    try {
+      const response = await fetch('/api/auth/avatar', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar: dataUrl }),
+      })
+      const data = await response.json() as { avatar?: string; code?: string }
+      if (!response.ok) {
+        setAvatarError(data.code === 'invalid_avatar' ? t('invalidPhoto') : t('photoUploadFailed'))
+        return
+      }
+      setAvatar(data.avatar || dataUrl)
+      setAvatarNotice(t('avatarSaved'))
+      setCameraOpen(false)
+    } catch {
+      setAvatarError(t('photoUploadFailed'))
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
+
+  const handleFileSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setAvatarError('')
+    setAvatarNotice('')
+    try {
+      const optimized = await optimizeProfilePhoto(file)
+      await saveAvatar(optimized)
+    } catch (cause) {
+      const code = cause instanceof Error ? cause.message : ''
+      setAvatarError(code === 'avatar_too_large' ? t('avatarTooLarge') : t('invalidPhoto'))
+    }
+  }
+
+  const capturePhoto = async () => {
+    const video = videoRef.current
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setCameraError(t('cameraUnavailable'))
+      return
+    }
+    const canvas = document.createElement('canvas')
+    const scale = Math.min(1, 512 / Math.max(video.videoWidth, video.videoHeight))
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale))
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale))
+    const context = canvas.getContext('2d')
+    if (!context) {
+      setCameraError(t('cameraUnavailable'))
+      return
+    }
+    context.translate(canvas.width, 0)
+    context.scale(-1, 1)
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    try {
+      const optimized = await optimizeCameraCanvas(canvas)
+      await saveAvatar(optimized)
+    } catch {
+      setCameraError(t('avatarTooLarge'))
+    }
+  }
+
+  const removeAvatar = async () => {
+    setAvatarBusy(true)
+    setAvatarError('')
+    setAvatarNotice('')
+    try {
+      const response = await fetch('/api/auth/avatar', { method: 'DELETE' })
+      if (!response.ok) throw new Error('remove_failed')
+      setAvatar('')
+      setAvatarNotice(t('avatarRemoved'))
+    } catch {
+      setAvatarError(t('photoUploadFailed'))
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
+
+  const submitPasswordChange = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPasswordError('')
+    setPasswordNotice('')
+    if (!currentPassword) {
+      setPasswordError(t('passwordRequired'))
+      return
+    }
+    if (newPassword.length < 8) {
+      setPasswordError(t('passwordWeak'))
+      return
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError(t('passwordMismatch'))
+      return
+    }
+    setPasswordBusy(true)
+    const code = await onChangePassword(currentPassword, newPassword)
+    setPasswordBusy(false)
+    if (code) {
+      const messages: Record<string, string> = {
+        current_password_invalid: 'passwordCurrentInvalid',
+        password_not_set: 'passwordNotSet',
+        same_password: 'passwordSame',
+        weak_password: 'passwordWeak',
+        rate_limited: 'passwordChangeFailed',
+      }
+      setPasswordError(t(messages[code] || 'passwordChangeFailed'))
+      return
+    }
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmNewPassword('')
+    setPasswordNotice(t('passwordUpdated'))
+  }
+
   return <>
     <PageHeading title={t('profileTitle')} desc={t('profileDesc')} t={t} />
     <div className="profile-layout">
-      <section className="profile-card">
-        <div className="profile-card-heading">
-          <div className="profile-avatar-large">{profile.fullName.trim() ? profile.fullName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') : <UserRound size={30} />}</div>
-          <div><span className="section-kicker">{t('personalInformation')}</span><h2>{profile.fullName || t('placeholderName')}</h2><p>{profile.email || t('placeholderEmail')}</p></div>
-        </div>
-        <form onSubmit={(event) => { event.preventDefault(); onSave() }} className="profile-form">
-          <label>{t('fullName')}<input required minLength={2} maxLength={80} value={profile.fullName} onChange={(event) => setProfile((current) => ({ ...current, fullName: event.target.value }))} placeholder={t('fullName')} /></label>
-          <label>{t('email')}<input type="email" value={profile.email} disabled readOnly title={t('email')} /></label>
-          <label>{t('phone')}<input type="tel" maxLength={30} value={profile.phone} onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))} placeholder="+20 1xx xxx xxxx" /></label>
-          <label>{t('preferredHand')}<select value={profile.preferredHand} onChange={(event) => setProfile((current) => ({ ...current, preferredHand: event.target.value }))}><option value="right">{t('rightHand')}</option><option value="left">{t('leftHand')}</option></select></label>
-          {error && <div className="auth-error" role="alert">{error}</div>}
-          <div className="profile-form-footer"><button className="primary-button" type="submit"><Check size={16} />{t('saveChanges')}</button>{saved && <span className="saved-message"><CheckCircle2 size={15} />{t('saved')}</span>}</div>
-        </form>
-      </section>
+      <div className="profile-main-column">
+        <section className="profile-card">
+          <div className="profile-card-heading profile-card-heading-photo">
+            <div className="profile-avatar-large">
+              {avatar ? <img src={avatar} alt={t('profilePhoto')} /> : initials || <UserRound size={30} />}
+            </div>
+            <div className="profile-heading-copy"><span className="section-kicker">{t('personalInformation')}</span><h2>{profile.fullName || t('placeholderName')}</h2><p>{profile.email || t('placeholderEmail')}</p></div>
+          </div>
+          <section className="profile-photo-section">
+            <div className="profile-photo-copy"><strong>{t('profilePhoto')}</strong><span>{t('profilePhotoHint')}</span></div>
+            <div className="profile-photo-actions">
+              <label className="profile-photo-button" htmlFor="profile-photo-file"><Upload size={16} />{t('uploadPhoto')}</label>
+              <input ref={fileRef} id="profile-photo-file" className="profile-photo-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileSelection} />
+              <button className="profile-photo-button" type="button" onClick={() => { setCameraError(''); setCameraOpen(true) }}><Camera size={16} />{t('takePhoto')}</button>
+              {avatar && <button className="profile-photo-remove" type="button" disabled={avatarBusy} onClick={removeAvatar}><Trash2 size={15} />{t('removePhoto')}</button>}
+            </div>
+            {cameraOpen && <div className="profile-camera-panel">
+              <div className="profile-camera-top"><strong>{t('cameraTitle')}</strong><button type="button" aria-label={t('cameraCancel')} onClick={() => setCameraOpen(false)}><X size={17} /></button></div>
+              <video ref={videoRef} autoPlay muted playsInline className="profile-camera-video" />
+              {cameraError && <div className="auth-error" role="alert">{cameraError}</div>}
+              <div className="profile-camera-actions"><button className="primary-button" type="button" disabled={avatarBusy} onClick={capturePhoto}><Camera size={16} />{t('capturePhoto')}</button><button type="button" className="outline-button" onClick={() => setCameraOpen(false)}>{t('cameraCancel')}</button></div>
+            </div>}
+            {avatarBusy && <div className="profile-inline-status">{t('loading')}</div>}
+            {avatarError && <div className="auth-error" role="alert">{avatarError}</div>}
+            {avatarNotice && <div className="profile-status-success"><CheckCircle2 size={15} />{avatarNotice}</div>}
+          </section>
+          <form onSubmit={(event) => { event.preventDefault(); onSave() }} className="profile-form">
+            <label>{t('fullName')}<input required minLength={2} maxLength={80} value={profile.fullName} onChange={(event) => setProfile((current) => ({ ...current, fullName: event.target.value }))} placeholder={t('fullName')} /></label>
+            <label>{t('email')}<input type="email" value={profile.email} disabled readOnly title={t('email')} /></label>
+            <label>{t('phone')}<input type="tel" maxLength={30} value={profile.phone} onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))} placeholder="+20 1xx xxx xxxx" /></label>
+            <label>{t('preferredHand')}<select value={profile.preferredHand} onChange={(event) => setProfile((current) => ({ ...current, preferredHand: event.target.value }))}><option value="right">{t('rightHand')}</option><option value="left">{t('leftHand')}</option></select></label>
+            {error && <div className="auth-error" role="alert">{error}</div>}
+            <div className="profile-form-footer"><button className="primary-button" type="submit"><Check size={16} />{t('saveChanges')}</button>{saved && <span className="saved-message"><CheckCircle2 size={15} />{t('saved')}</span>}</div>
+          </form>
+        </section>
+
+        <section className="profile-card profile-security-card">
+          <div className="profile-security-heading"><div className="profile-security-icon"><KeyRound size={20} /></div><div><h2>{t('passwordSecurity')}</h2><p>{t('passwordChangeHint')}</p></div></div>
+          <form className="profile-password-form" onSubmit={submitPasswordChange}>
+            <label>{t('currentPassword')}<input type="password" autoComplete="current-password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
+            <label>{t('newPassword')}<input type="password" autoComplete="new-password" minLength={8} required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
+            <label>{t('confirmNewPassword')}<input type="password" autoComplete="new-password" minLength={8} required value={confirmNewPassword} onChange={(event) => setConfirmNewPassword(event.target.value)} /></label>
+            {passwordError && <div className="auth-error" role="alert">{passwordError}</div>}
+            {passwordNotice && <div className="profile-status-success"><CheckCircle2 size={15} />{passwordNotice}</div>}
+            <div className="profile-form-footer"><button className="primary-button" type="submit" disabled={passwordBusy}>{passwordBusy ? t('loading') : <><KeyRound size={16} />{t('updatePassword')}</>}</button></div>
+          </form>
+        </section>
+      </div>
       <aside className="profile-side-note"><div className="note-icon"><ShieldCheck size={22} /></div><h3>{t('account')}</h3><p>{t('profilePrivacy')}</p><div className="profile-note-line"><span>{t('language')}</span><strong>{profile.language === 'ar' ? t('arabic') : t('english')}</strong></div></aside>
     </div>
   </>
 }
+
 
 function SettingsPage({ t, language, setLanguage, theme, setTheme, motionEnabled, setMotionEnabled }: { t: (key: string) => string; language: Language; setLanguage: (value: Language) => void; theme: 'light' | 'dark'; setTheme: (value: 'light' | 'dark') => void; motionEnabled: boolean; setMotionEnabled: (value: boolean) => void }) {
   return <>
