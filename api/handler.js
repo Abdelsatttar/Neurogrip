@@ -761,7 +761,7 @@ async function handleRequest(req, res) {
     if (await isRateLimited(req)) return sendJson(res, 429, { code: "rate_limited" });
     const body = await readBody(req);
     const avatar = typeof body.avatar === "string" ? body.avatar : "";
-    const match = avatar.match(/^data:image\\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/);
+    const match = avatar.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/);
     if (!match || avatar.length > 220000) return sendJson(res, 400, { code: "invalid_avatar" });
     const imageBytes = Buffer.from(match[1], "base64");
     if (
