@@ -266,6 +266,7 @@ function clearGoogleStateCookie() {
 }
 
 async function beginGoogleSignIn(req, res) {
+  if (await isRateLimited(req)) return sendJson(res, 429, { code: "rate_limited" });
   const body = await readBody(req);
   if (body.acceptTerms !== true) return sendJson(res, 400, { code: "terms_required" });
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
