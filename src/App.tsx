@@ -404,7 +404,7 @@ function LoginScreen({
     resetSubtitle: 'اكتب بريدك الإلكتروني وسنرسل لك رابطًا آمنًا لإعادة تعيين كلمة المرور.',
     newPassword: 'كلمة المرور الجديدة', savePassword: 'حفظ كلمة المرور الجديدة',
     back: 'العودة لتسجيل الدخول', google: 'المتابعة باستخدام Google',
-    googleHint: 'دخول Google ينشئ حساب مريض جديدًا، أو يفتح حسابًا مرتبطًا بالفعل.',
+    googleHint: 'دخول آمن وسريع بحساب Google، من غير ما تحتاج كلمة مرور جديدة.',
     googleSetup: 'تسجيل Google لم يتم إعداده بعد.',
     googleTeamOnly: 'حسابات الدكتور والمطوّر تستخدم كود الدعوة وتسجيل الدخول بالبريد وكلمة المرور.',
     loading: 'جارٍ التنفيذ...', show: 'إظهار', hide: 'إخفاء',
@@ -468,7 +468,7 @@ function LoginScreen({
     resetSubtitle: 'Enter your email and we will send a secure, one-time password reset link.',
     newPassword: 'New password', savePassword: 'Save new password',
     back: 'Back to sign in', google: 'Continue with Google',
-    googleHint: 'Create a patient account with Google, or continue to an account already linked to Google.',
+    googleHint: 'Fast, secure access with your Google account. No new password needed.',
     googleSetup: 'Google sign-in has not been configured yet.',
     googleTeamOnly: 'Doctor and Developer accounts use an invitation code and email/password sign-in.',
     loading: 'Please wait...', show: 'Show', hide: 'Hide',
@@ -631,12 +631,12 @@ function LoginScreen({
       : mode === 'forgot' ? labels.resetSubtitle : (isArabic ? 'استخدم كلمة مرور قوية لم تستخدمها من قبل.' : 'Choose a strong password you have not used before.')
 
   return (
-    <div className={`auth-screen ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`} dir={isArabic ? 'rtl' : 'ltr'}>
+    <div className={`auth-screen auth-screen--${mode} ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`} dir={isArabic ? 'rtl' : 'ltr'}>
       <div className="auth-toolbar">
         <button type="button" onClick={() => onLanguageChange(isArabic ? 'en' : 'ar')}><Globe2 size={16} />{labels.language === 'English' ? 'English' : 'العربية'}</button>
         <button type="button" onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}{theme === 'dark' ? labels.themeLight : labels.themeDark}</button>
       </div>
-      <div className="auth-layout">
+      <div className={`auth-layout auth-layout--${mode}`}>
         <section className="auth-brand-panel">
           <div className="auth-brand-mark"><Hand size={34} /><span /></div>
           <div className="auth-brand-name">NEURO<span>GRIP</span></div>
@@ -650,7 +650,7 @@ function LoginScreen({
           <div className="auth-brand-footer"><ShieldCheck size={15} /><span>NEUROGRIP · EMG SMART PROSTHETIC</span></div>
         </section>
 
-        <section className={`auth-card ${mode === 'register' ? 'auth-card-register' : ''}`}>
+        <section className={`auth-card auth-card-${mode} ${mode === 'register' ? 'auth-card-register' : ''}`}>
           <div className="auth-card-heading">
             <span className="auth-lock-icon">{mode === 'forgot' || mode === 'reset' ? <Mail size={19} /> : <LockKeyhole size={19} />}</span>
             <div><span className="auth-card-kicker">NEUROGRIP / ACCOUNT</span><h2>{currentTitle}</h2><p>{currentSubtitle}</p></div>
@@ -661,6 +661,27 @@ function LoginScreen({
               <button type="button" className={`auth-role-card ${role === 'patient' ? 'selected' : ''}`} onClick={() => chooseRole('patient')} aria-pressed={role === 'patient'}><UserRound size={21} /><strong>{labels.patient}</strong><small>{labels.patientDesc}</small></button>
               <button type="button" className={`auth-role-card ${role === 'doctor' ? 'selected' : ''}`} onClick={() => chooseRole('doctor')} aria-pressed={role === 'doctor'}><Stethoscope size={21} /><strong>{labels.doctor}</strong><small>{labels.doctorDesc}</small></button>
               <button type="button" className={`auth-role-card ${role === 'developer' ? 'selected' : ''}`} onClick={() => chooseRole('developer')} aria-pressed={role === 'developer'}><Code2 size={21} /><strong>{labels.developer}</strong><small>{labels.developerDesc}</small></button>
+            </div>
+          )}
+
+          {showGoogle && mode === 'login' && (
+            <div className="auth-social-primary">
+              <label className="auth-terms-row auth-login-terms">
+                <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
+                <span>{labels.terms}</span>
+              </label>
+              <button type="button" className="auth-google-button auth-google-button-primary" onClick={handleGoogleSignIn} disabled={submitting || !providers.google} title={!providers.google ? labels.googleSetup : ''}>
+                <svg className="auth-google-logo" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11c-.5 2.5-1.9 4.6-4.1 6v5h6.6c3.9-3.6 6.1-8.8 6.1-14.7z"/>
+                  <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5c-1.8 1.2-4 1.9-6.9 1.9-5.3 0-9.8-3.6-11.4-8.4H5.8v5.2C9.2 39.5 16 44 24 44z"/>
+                  <path fill="#FBBC05" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.2H5.8a20 20 0 0 0 0 17.6l6.8-5.2z"/>
+                  <path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 5.9 29.5 4 24 4 16 4 9.2 8.5 5.8 15.2l6.8 5.2C14.2 15.6 18.7 12 24 12z"/>
+                </svg>
+                <span className="auth-google-button-copy"><strong>{labels.google}</strong><small>{isArabic ? 'دخول سريع وآمن بحسابك' : 'Fast and secure with your account'}</small></span>
+                <span className="auth-google-badge">{isArabic ? 'موصى به' : 'RECOMMENDED'}</span>
+              </button>
+              <p className="auth-google-caption">{providers.google ? labels.googleHint : labels.googleSetup} {labels.trust}</p>
+              <div className="auth-divider auth-email-divider"><span>{isArabic ? 'أو سجّل بالبريد الإلكتروني' : 'OR SIGN IN WITH EMAIL'}</span></div>
             </div>
           )}
 
@@ -706,7 +727,7 @@ function LoginScreen({
               <label>{labels.inviteCode}<input type="password" autoComplete="off" required value={inviteCode} onChange={(event) => setInviteCode(event.target.value)} /><small className="auth-field-hint">{labels.inviteHint}</small></label>
             )}
 
-            {(mode === 'register' || (mode === 'login' && showGoogle)) && (
+            {mode === 'register' && (
               <label className="auth-terms-row">
                 <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
                 <span>{labels.terms}</span>
@@ -729,14 +750,20 @@ function LoginScreen({
             </button>
           </form>
 
-          {showGoogle && (
-            <>
-              <div className="auth-divider"><span>{isArabic ? 'أو تابع باستخدام' : 'OR CONTINUE WITH'}</span></div>
+          {showGoogle && mode === 'register' && (
+            <div className="auth-social-secondary">
+              <div className="auth-divider"><span>{isArabic ? 'أو أنشئ حسابك باستخدام' : 'OR CREATE AN ACCOUNT WITH'}</span></div>
               <button type="button" className="auth-google-button" onClick={handleGoogleSignIn} disabled={submitting || !providers.google} title={!providers.google ? labels.googleSetup : ''}>
-                <span className="auth-google-mark">G</span><span>{labels.google}</span>
+                <svg className="auth-google-logo" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11c-.5 2.5-1.9 4.6-4.1 6v5h6.6c3.9-3.6 6.1-8.8 6.1-14.7z"/>
+                  <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5c-1.8 1.2-4 1.9-6.9 1.9-5.3 0-9.8-3.6-11.4-8.4H5.8v5.2C9.2 39.5 16 44 24 44z"/>
+                  <path fill="#FBBC05" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.2H5.8a20 20 0 0 0 0 17.6l6.8-5.2z"/>
+                  <path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 5.9 29.5 4 24 4 16 4 9.2 8.5 5.8 15.2l6.8 5.2C14.2 15.6 18.7 12 24 12z"/>
+                </svg>
+                <span>{labels.google}</span>
               </button>
               <p className="auth-google-caption">{providers.google ? labels.googleHint : labels.googleSetup} {labels.trust}</p>
-            </>
+            </div>
           )}
           {showRoles && role !== 'patient' && <p className="auth-team-note"><ShieldCheck size={15} />{labels.googleTeamOnly}</p>}
 
