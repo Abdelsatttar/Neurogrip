@@ -40,6 +40,7 @@ async function ensureSchema() {
         "CREATE INDEX IF NOT EXISTS ng_support_tickets_updated_idx ON ng_support_tickets (updated_at DESC)",
         "CREATE TABLE IF NOT EXISTS ng_auth_rate_limits (ip_hash char(64) PRIMARY KEY, window_started_at timestamptz NOT NULL DEFAULT NOW(), attempts integer NOT NULL DEFAULT 0)",
         "ALTER TABLE ng_users ADD COLUMN IF NOT EXISTS profile_phone varchar(30)",
+        "ALTER TABLE ng_users ADD COLUMN IF NOT EXISTS profile_avatar_data text",
         "ALTER TABLE ng_users ADD COLUMN IF NOT EXISTS preferred_hand varchar(8) NOT NULL DEFAULT 'right'",
         "ALTER TABLE ng_users ADD COLUMN IF NOT EXISTS terms_accepted_at timestamptz",
         "ALTER TABLE ng_users ADD COLUMN IF NOT EXISTS google_sub text",
@@ -743,6 +744,87 @@ async function handleRequest(req, res) {
     );
     return sendJson(res, 200, { user: publicUser(rows[0]) });
   }
+
+  if (pathname === "/api/auth/avatar" && method === "GET") {
+    const user = await sessionUser(req);
+    if (!user) return sendJson(res, 401, { error: "Sign in required." });
+    const rows = await sql.query(
+      "SELECT profile_avatar_data FROM ng_users WHERE id = $1 LIMIT 1",
+      [user.id]
+    );
+    return sendJson(res, 200, { avatar: rows[0]?.profile_avatar_data || "" });
+  }
+
+  if (pathname === "/api/auth/avatar" && method === "PUT") {
+    const user = await sessionUser(req);
+    if (!user) return sendJson(res, 401, { error: "Sign in required." });
+    if (await isRateLimited(req)) return sendJson(res, 429, { code: "rate_limited" });
+    const body = await readBody(req);
+    const avatar = typeof body.avatar === "string" ? body.avatar : "";
+    const match = avatar.match(/^data:image\\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/);
+    if (!match || avatar.length > 220000) return sendJson(res, 400, { code: "invalid_avatar" });
+    const imageBytes = Buffer.from(match[1], "base64");
+    if (
+      imageBytes.length < 100 ||
+      imageBytes.length > 160000 ||
+      imageBytes[0] !== 0xff ||
+      imageBytes[1] !== 0xd8 ||
+      imageBytes[2] !== 0xff ||
+      imageBytes[imageBytes.length - 2] !== 0xff ||
+      imageBytes[imageBytes.length - 1] !== 0xd9 ||
+      imageBytes.toString("base64") !== match[1]
+    ) {
+      return sendJson(res, 400, { code: "invalid_avatar" });
+    }
+    await sql.query(
+      "UPDATE ng_users SET profile_avatar_data = $1 WHERE id = $2",
+      [avatar, user.id]
+    );
+    return sendJson(res, 200, { ok: true, avatar });
+  }
+
+  if (pathname === "/api/auth/avatar" && method === "DELETE") {
+    const user = await sessionUser(req);
+    if (!user) return sendJson(res, 401, { error: "Sign in required." });
+    await sql.query("UPDATE ng_users SET profile_avatar_data = NULL WHERE id = $1", [user.id]);
+    return sendJson(res, 200, { ok: true });
+  }
+
+  if (pathname === "/api/auth/change-password" && method === "POST") {
+    const user = await sessionUser(req);
+    if (!user) return sendJson(res, 401, { error: "Sign in required." });
+    if (await isRateLimited(req)) return sendJson(res, 429, { code: "rate_limited" });
+    const body = await readBody(req);
+    const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
+    const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+    if (!currentPassword) return sendJson(res, 400, { code: "current_password_required" });
+    if (newPassword.length < 8 || Buffer.byteLength(newPassword, "utf8") > 72) {
+      return sendJson(res, 400, { code: "weak_password" });
+    }
+    const rows = await sql.query(
+      "SELECT password_salt, password_hash FROM ng_users WHERE id = $1 LIMIT 1",
+      [user.id]
+    );
+    const passwordRecord = rows[0];
+    if (!passwordRecord?.password_salt || !passwordRecord?.password_hash) {
+      return sendJson(res, 409, { code: "password_not_set" });
+    }
+    if (!(await passwordMatches(currentPassword, passwordRecord))) {
+      return sendJson(res, 403, { code: "current_password_invalid" });
+    }
+    if (await passwordMatches(newPassword, passwordRecord)) {
+      return sendJson(res, 400, { code: "same_password" });
+    }
+    const nextRecord = await makePasswordRecord(newPassword);
+    const sessionToken = randomBytes(32).toString("hex");
+    const updated = await sql.query(
+      "WITH changed AS (UPDATE ng_users SET password_salt = $1, password_hash = $2 WHERE id = $3 RETURNING id), revoked AS (DELETE FROM ng_sessions WHERE user_id = $3 RETURNING token_hash) INSERT INTO ng_sessions (token_hash, user_id, expires_at) SELECT $4, id, NOW() + INTERVAL '8 hours' FROM changed RETURNING user_id",
+      [nextRecord.salt, nextRecord.hash, user.id, hashToken(sessionToken)]
+    );
+    if (!updated.length) return sendJson(res, 500, { code: "password_update_failed" });
+    return sendJson(res, 200, { ok: true }, { "Set-Cookie": cookieHeader(sessionToken, SESSION_TTL_SECONDS) });
+  }
+
 
   if (pathname === "/api/auth/me" && method === "GET") {
     const user = await sessionUser(req);
