@@ -1284,7 +1284,7 @@ function ProfilePage({ t, profile, setProfile, saved, error, onSave, onChangePas
   const [passwordNotice, setPasswordNotice] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const initials = profile.fullName.trim().split(/\\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('')
+  const initials = profile.fullName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('')
 
   useEffect(() => {
     let active = true
@@ -1472,6 +1472,7 @@ function ProfilePage({ t, profile, setProfile, saved, error, onSave, onChangePas
               <div className="profile-camera-actions"><button className="primary-button" type="button" disabled={avatarBusy} onClick={capturePhoto}><Camera size={16} />{t('capturePhoto')}</button><button type="button" className="outline-button" onClick={() => setCameraOpen(false)}>{t('cameraCancel')}</button></div>
             </div>}
             {avatarBusy && <div className="profile-inline-status">{t('loading')}</div>}
+            {cameraError && <div className="auth-error" role="alert">{cameraError}</div>}
             {avatarError && <div className="auth-error" role="alert">{avatarError}</div>}
             {avatarNotice && <div className="profile-status-success"><CheckCircle2 size={15} />{avatarNotice}</div>}
           </section>
