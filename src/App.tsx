@@ -19,12 +19,6 @@ type AppNotification = { id: string; type: string; ticketId: string | null; subj
 type Profile = { fullName: string; email: string; preferredHand: string; language: Language }
 type BatteryState = { level: number; charging: boolean; source: 'demo' | 'device' }
 
-const demoEmails: Record<UserRole, string> = {
-  patient: 'patient.demo@neurogrip.local',
-  doctor: 'doctor.demo@neurogrip.local',
-  developer: 'developer.demo@neurogrip.local',
-}
-
 const dictionary: Record<Language, Record<string, string>> = {
   en: {
     dashboard: 'Dashboard', howToUse: 'How to Use', learning: 'EMG Learning', specialist: 'Specialist Portal', supportCenter: 'Support & Communication', profile: 'My Profile', settings: 'Settings',
@@ -293,7 +287,7 @@ function LoginScreen({ language, theme, onLanguageChange, onThemeChange, onLogin
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [role, setRole] = useState<UserRole>('patient')
   const [name, setName] = useState('')
-  const [email, setEmail] = useState(demoEmails.patient)
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [inviteCode, setInviteCode] = useState('')
@@ -303,26 +297,26 @@ function LoginScreen({ language, theme, onLanguageChange, onThemeChange, onLogin
     eyebrow: 'بوابة الدخول', title: 'مرحبًا بك في NEUROGRIP', subtitle: 'اختار نوع الحساب وسجّل الدخول للمساحة الخاصة بيك.',
     patient: 'المريض', patientDesc: 'التعلم والتدريب ومتابعة اليد', doctor: 'الدكتور', doctorDesc: 'الحالات والتقارير والمتابعة الطبية',
     developer: 'المطوّر', developerDesc: 'تشخيص الجهاز والحساسات', name: 'الاسم بالكامل', email: 'البريد الإلكتروني', password: 'كلمة المرور', confirmPassword: 'تأكيد كلمة المرور', inviteCode: 'كود الدعوة',
-    login: 'تسجيل الدخول', register: 'إنشاء حساب', switchRegister: 'ليس لديك حساب؟ إنشاء حساب جديد', switchLogin: 'لديك حساب بالفعل؟ تسجيل الدخول', invalid: 'بيانات الدخول غير صحيحة لهذا النوع من الحسابات.', demo: 'حسابات تجريبية للاختبار',
-    roleNote: 'اختار نوع حسابك للوصول إلى المساحة المناسبة.', demoOnly: 'للتجربة استخدم بيانات الحسابات التجريبية الموجودة في README.',
+    login: 'تسجيل الدخول', register: 'إنشاء حساب', switchRegister: 'ليس لديك حساب؟ إنشاء حساب جديد', switchLogin: 'لديك حساب بالفعل؟ تسجيل الدخول', invalid: 'بيانات الدخول غير صحيحة لهذا النوع من الحسابات.',
+    roleNote: 'اختار نوع حسابك للوصول إلى المساحة المناسبة.',
     language: 'English', themeLight: 'فاتح', themeDark: 'داكن',
-    serviceError: 'خادم الحسابات غير متاح. شغّل المشروع باستخدام npm run dev من مجلد المشروع.',
+    serviceError: 'خدمة الحسابات غير متاحة حاليًا. حاول مرة أخرى بعد قليل.',
     loading: 'جارٍ المعالجة...', inviteHint: 'حساب الدكتور والمطوّر يحتاج كود دعوة من مسؤول المشروع.',
-    errors: { rate_limited: 'محاولات كثيرة. انتظر دقيقة وحاول مرة أخرى.', invalid_name: 'اكتب الاسم بالكامل.', invalid_email: 'اكتب بريدًا إلكترونيًا صحيحًا.', weak_password: 'كلمة المرور يجب ألا تقل عن 8 أحرف.', email_exists: 'هذا البريد مسجل بالفعل. جرّب تسجيل الدخول.', invalid_invite: 'كود الدعوة غير صحيح لهذا الدور.', invalid_role: 'نوع الحساب غير صحيح.', invalid_registration: 'تعذّر إنشاء الحساب. راجع البيانات وحاول مرة أخرى.', registration_failed: 'تعذّر إكمال التسجيل. حاول مرة أخرى.', password_mismatch: 'كلمتا المرور غير متطابقتين.', service_error: 'خادم الحسابات غير متاح.' } as Record<string, string>,
+    errors: { rate_limited: 'محاولات كثيرة. انتظر دقيقة وحاول مرة أخرى.', invalid_name: 'اكتب الاسم بالكامل.', invalid_email: 'اكتب بريدًا إلكترونيًا صحيحًا.', weak_password: 'كلمة المرور يجب ألا تقل عن 8 أحرف.', email_exists: 'هذا البريد مسجل بالفعل. جرّب تسجيل الدخول.', invalid_invite: 'كود الدعوة غير صحيح لهذا الدور.', invite_not_configured: 'تسجيل هذا النوع غير مفعّل بعد. تواصل مع مسؤول المشروع.', invalid_role: 'نوع الحساب غير صحيح.', invalid_registration: 'تعذّر إنشاء الحساب. راجع البيانات وحاول مرة أخرى.', registration_failed: 'تعذّر إكمال التسجيل. حاول مرة أخرى.', password_mismatch: 'كلمتا المرور غير متطابقتين.', service_error: 'خادم الحسابات غير متاح.' } as Record<string, string>,
   } : {
     eyebrow: 'ROLE-BASED ACCESS', title: 'Welcome to NEUROGRIP', subtitle: 'Choose your account type and sign in to your own workspace.',
     patient: 'Patient', patientDesc: 'Learning, practice, and hand status', doctor: 'Doctor', doctorDesc: 'Cases, reports, and clinical follow-up',
     developer: 'Developer', developerDesc: 'Device and sensor diagnostics', name: 'Full name', email: 'Email address', password: 'Password', confirmPassword: 'Confirm password', inviteCode: 'Invitation code',
-    login: 'Sign in', register: 'Create account', switchRegister: 'New to NEUROGRIP? Create an account', switchLogin: 'Already have an account? Sign in', invalid: 'The sign-in details do not match this account type.', demo: 'Demo accounts for testing',
-    roleNote: 'Choose your account type to open the correct workspace.', demoOnly: 'For testing, use the demo account details listed in README.',
+    login: 'Sign in', register: 'Create account', switchRegister: 'New to NEUROGRIP? Create an account', switchLogin: 'Already have an account? Sign in', invalid: 'The sign-in details do not match this account type.',
+    roleNote: 'Choose your account type to open the correct workspace.',
     language: 'العربية', themeLight: 'Light', themeDark: 'Dark',
-    serviceError: 'The account server is unavailable. Start the project with npm run dev from its folder.',
+    serviceError: 'The account service is temporarily unavailable. Please try again shortly.',
     loading: 'Please wait...', inviteHint: 'Doctor and Developer registrations require an invitation code from the project administrator.',
-    errors: { rate_limited: 'Too many attempts. Wait one minute and try again.', invalid_name: 'Enter your full name.', invalid_email: 'Enter a valid email address.', weak_password: 'Password must be at least 8 characters.', email_exists: 'This email is already registered. Try signing in.', invalid_invite: 'The invitation code is not valid for this role.', invalid_role: 'The selected account type is invalid.', invalid_registration: 'Could not create the account. Check the details and try again.', registration_failed: 'Registration could not be completed. Please try again.', password_mismatch: 'The passwords do not match.', service_error: 'The account server is unavailable.' } as Record<string, string>,
+    errors: { rate_limited: 'Too many attempts. Wait one minute and try again.', invalid_name: 'Enter your full name.', invalid_email: 'Enter a valid email address.', weak_password: 'Password must be at least 8 characters.', email_exists: 'This email is already registered. Try signing in.', invalid_invite: 'The invitation code is not valid for this role.', invite_not_configured: 'Registration for this role is not configured yet. Contact the project administrator.', invalid_role: 'The selected account type is invalid.', invalid_registration: 'Could not create the account. Check the details and try again.', registration_failed: 'Registration could not be completed. Please try again.', password_mismatch: 'The passwords do not match.', service_error: 'The account server is unavailable.' } as Record<string, string>,
   }
   const chooseRole = (nextRole: UserRole) => {
     setRole(nextRole)
-    setEmail(mode === 'login' ? demoEmails[nextRole] : '')
+    setEmail('')
     setPassword('')
     setConfirmPassword('')
     setInviteCode('')
@@ -330,7 +324,7 @@ function LoginScreen({ language, theme, onLanguageChange, onThemeChange, onLogin
   }
   const changeMode = (nextMode: 'login' | 'register') => {
     setMode(nextMode)
-    setEmail(nextMode === 'login' ? demoEmails[role] : '')
+    setEmail('')
     setName('')
     setPassword('')
     setConfirmPassword('')
@@ -387,7 +381,6 @@ function LoginScreen({ language, theme, onLanguageChange, onThemeChange, onLogin
             <button className="auth-submit" type="submit" disabled={submitting}>{mode === 'login' ? <LogIn size={17} /> : <UserRound size={17} />}{submitting ? labels.loading : mode === 'login' ? labels.login : labels.register}</button>
           </form>
           <button type="button" className="auth-mode-toggle" onClick={() => changeMode(mode === 'login' ? 'register' : 'login')}>{mode === 'login' ? labels.switchRegister : labels.switchLogin}</button>
-          {mode === 'login' && <div className="auth-demo-note"><strong>{labels.demo}</strong><p>{labels.demoOnly}</p><small>{demoEmails[role]}</small></div>}
         </section>
       </div>
     </div>

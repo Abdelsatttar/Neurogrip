@@ -19,12 +19,6 @@ function makePasswordRecord(password) {
   return { salt, hash }
 }
 
-const demoAccounts = [
-  { id: 'patient-demo-01', role: 'patient', name: 'Patient Demo', email: 'patient.demo@neurogrip.local', password: 'Patient#2026' },
-  { id: 'doctor-demo-01', role: 'doctor', name: 'Doctor Demo', email: 'doctor.demo@neurogrip.local', password: 'Doctor#2026' },
-  { id: 'developer-demo-01', role: 'developer', name: 'Developer Demo', email: 'developer.demo@neurogrip.local', password: 'Developer#2026' },
-].map((account) => ({ ...account, passwordRecord: makePasswordRecord(account.password) }))
-
 function loadRegisteredAccounts() {
   try {
     const parsed = JSON.parse(readFileSync(ACCOUNTS_FILE, 'utf8'))
@@ -38,11 +32,10 @@ function loadRegisteredAccounts() {
   }
 }
 
-const accounts = [...demoAccounts, ...loadRegisteredAccounts()]
+const accounts = loadRegisteredAccounts()
 
 function persistRegisteredAccounts() {
-  const demoIds = new Set(demoAccounts.map((account) => account.id))
-  const persisted = accounts.filter((account) => !demoIds.has(account.id)).map(({ id, role, name, email, passwordRecord, createdAt }) => ({ id, role, name, email, passwordRecord, createdAt }))
+  const persisted = accounts.map(({ id, role, name, email, passwordRecord, createdAt }) => ({ id, role, name, email, passwordRecord, createdAt }))
   const temporaryFile = `${ACCOUNTS_FILE}.tmp`
   writeFileSync(temporaryFile, JSON.stringify(persisted, null, 2), { mode: 0o600 })
   renameSync(temporaryFile, ACCOUNTS_FILE)
@@ -265,8 +258,8 @@ const server = http.createServer(async (request, response) => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return sendJson(response, 400, { code: 'invalid_email' })
       if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) return sendJson(response, 400, { code: 'weak_password' })
       if (accounts.some((account) => account.email.toLowerCase() === email)) return sendJson(response, 409, { code: 'email_exists' })
-      if (role === 'doctor' && inviteCode !== (process.env.DOCTOR_INVITE_CODE || 'NG-DOCTOR-DEMO-2026')) return sendJson(response, 403, { code: 'invalid_invite' })
-      if (role === 'developer' && inviteCode !== (process.env.DEVELOPER_INVITE_CODE || 'NG-DEVELOPER-DEMO-2026')) return sendJson(response, 403, { code: 'invalid_invite' })
+      if (role === 'doctor' && (!process.env.DOCTOR_INVITE_CODE || inviteCode !== process.env.DOCTOR_INVITE_CODE)) return sendJson(response, 403, { code: 'invalid_invite' })
+      if (role === 'developer' && (!process.env.DEVELOPER_INVITE_CODE || inviteCode !== process.env.DEVELOPER_INVITE_CODE)) return sendJson(response, 403, { code: 'invalid_invite' })
 
       const account = {
         id: `user-${randomUUID()}`,

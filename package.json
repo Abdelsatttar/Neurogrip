@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/dev.mjs",
+    "dev": "node --env-file-if-exists=.env scripts/dev.mjs",
     "api": "node server/index.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0"
