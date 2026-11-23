@@ -35,7 +35,7 @@ function loadRegisteredAccounts() {
 const accounts = loadRegisteredAccounts()
 
 function persistRegisteredAccounts() {
-  const persisted = accounts.map(({ id, role, name, email, passwordRecord, createdAt, profile_phone, preferred_hand }) => ({ id, role, name, email, passwordRecord, createdAt, profile_phone, preferred_hand }))
+  const persisted = accounts.map(({ id, role, name, email, passwordRecord, createdAt, profile_phone, preferred_hand, profile_avatar_data }) => ({ id, role, name, email, passwordRecord, createdAt, profile_phone, preferred_hand, profile_avatar_data }))
   const temporaryFile = `${ACCOUNTS_FILE}.tmp`
   writeFileSync(temporaryFile, JSON.stringify(persisted, null, 2), { mode: 0o600 })
   renameSync(temporaryFile, ACCOUNTS_FILE)
@@ -330,6 +330,61 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 400, { code: 'invalid_profile' })
     }
   }
+
+  if (pathname === '/api/auth/avatar' && request.method === 'GET') {
+    const user = getSessionUser(request)
+    if (!user) return sendJson(response, 401, { error: 'Sign in required.' })
+    return sendJson(response, 200, { avatar: user.profile_avatar_data || '' })
+  }
+
+  if (pathname === '/api/auth/avatar' && request.method === 'PUT') {
+    const user = getSessionUser(request)
+    if (!user) return sendJson(response, 401, { error: 'Sign in required.' })
+    if (isLoginRateLimited(request)) return sendJson(response, 429, { code: 'rate_limited' })
+    const body = await readJson(request)
+    const avatar = typeof body.avatar === 'string' ? body.avatar : ''
+    const match = avatar.match(/^data:image\\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/)
+    if (!match || avatar.length > 220000) return sendJson(response, 400, { code: 'invalid_avatar' })
+    const bytes = Buffer.from(match[1], 'base64')
+    if (bytes.length < 100 || bytes.length > 160000 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff ||
+      bytes[bytes.length - 2] !== 0xff || bytes[bytes.length - 1] !== 0xd9 || bytes.toString('base64') !== match[1]) {
+      return sendJson(response, 400, { code: 'invalid_avatar' })
+    }
+    user.profile_avatar_data = avatar
+    persistRegisteredAccounts()
+    return sendJson(response, 200, { ok: true, avatar })
+  }
+
+  if (pathname === '/api/auth/avatar' && request.method === 'DELETE') {
+    const user = getSessionUser(request)
+    if (!user) return sendJson(response, 401, { error: 'Sign in required.' })
+    delete user.profile_avatar_data
+    persistRegisteredAccounts()
+    return sendJson(response, 200, { ok: true })
+  }
+
+  if (pathname === '/api/auth/change-password' && request.method === 'POST') {
+    const user = getSessionUser(request)
+    if (!user) return sendJson(response, 401, { error: 'Sign in required.' })
+    if (isLoginRateLimited(request)) return sendJson(response, 429, { code: 'rate_limited' })
+    const body = await readJson(request)
+    const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : ''
+    const newPassword = typeof body.newPassword === 'string' ? body.newPassword : ''
+    if (!currentPassword) return sendJson(response, 400, { code: 'current_password_required' })
+    if (newPassword.length < 8 || Buffer.byteLength(newPassword, 'utf8') > 72) return sendJson(response, 400, { code: 'weak_password' })
+    if (!user.passwordRecord?.salt || !user.passwordRecord?.hash) return sendJson(response, 409, { code: 'password_not_set' })
+    if (!passwordMatches(currentPassword, user.passwordRecord)) return sendJson(response, 403, { code: 'current_password_invalid' })
+    if (passwordMatches(newPassword, user.passwordRecord)) return sendJson(response, 400, { code: 'same_password' })
+    user.passwordRecord = makePasswordRecord(newPassword)
+    persistRegisteredAccounts()
+    for (const [token, session] of sessions.entries()) {
+      if (session.userId === user.id) sessions.delete(token)
+    }
+    const token = randomBytes(32).toString('hex')
+    sessions.set(token, { userId: user.id, expiresAt: Date.now() + SESSION_TTL_MS })
+    return sendJson(response, 200, { ok: true }, { 'Set-Cookie': sessionCookie(token, SESSION_TTL_MS / 1000) })
+  }
+
 
 
   if (pathname === '/api/auth/logout' && request.method === 'POST') {
