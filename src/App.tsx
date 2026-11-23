@@ -227,10 +227,16 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role, email, password }),
       })
-      if (!response.ok) return false
+      if (!response.ok) {
+        if (response.status >= 500) setAuthServiceError(true)
+        return response.status >= 500 ? null : false
+      }
       const data = await response.json() as { user: AuthSession }
       const access = await fetch(`/api/${data.user.role}/workspace`)
-      if (!access.ok) return false
+      if (!access.ok) {
+        if (access.status >= 500) setAuthServiceError(true)
+        return access.status >= 500 ? null : false
+      }
       setSession(data.user)
       setAuthServiceError(false)
       return true
@@ -248,9 +254,15 @@ function App() {
         body: JSON.stringify(details),
       })
       const data = await response.json() as { user?: AuthSession; code?: string }
-      if (!response.ok || !data.user) return data.code || 'registration_failed'
+      if (!response.ok || !data.user) {
+        if (response.status >= 500) setAuthServiceError(true)
+        return data.code || 'registration_failed'
+      }
       const access = await fetch(`/api/${data.user.role}/workspace`)
-      if (!access.ok) return 'registration_failed'
+      if (!access.ok) {
+        if (access.status >= 500) setAuthServiceError(true)
+        return access.status >= 500 ? 'service_unavailable' : 'registration_failed'
+      }
       setSession(data.user)
       setAuthServiceError(false)
       return null
@@ -302,7 +314,7 @@ function LoginScreen({ language, theme, onLanguageChange, onThemeChange, onLogin
     language: 'English', themeLight: 'فاتح', themeDark: 'داكن',
     serviceError: 'خدمة الحسابات غير متاحة حاليًا. حاول مرة أخرى بعد قليل.',
     loading: 'جارٍ المعالجة...', inviteHint: 'حساب الدكتور والمطوّر يحتاج كود دعوة من مسؤول المشروع.',
-    errors: { rate_limited: 'محاولات كثيرة. انتظر دقيقة وحاول مرة أخرى.', invalid_name: 'اكتب الاسم بالكامل.', invalid_email: 'اكتب بريدًا إلكترونيًا صحيحًا.', weak_password: 'كلمة المرور يجب ألا تقل عن 8 أحرف.', email_exists: 'هذا البريد مسجل بالفعل. جرّب تسجيل الدخول.', invalid_invite: 'كود الدعوة غير صحيح لهذا الدور.', invite_not_configured: 'تسجيل هذا النوع غير مفعّل بعد. تواصل مع مسؤول المشروع.', invalid_role: 'نوع الحساب غير صحيح.', invalid_registration: 'تعذّر إنشاء الحساب. راجع البيانات وحاول مرة أخرى.', registration_failed: 'تعذّر إكمال التسجيل. حاول مرة أخرى.', password_mismatch: 'كلمتا المرور غير متطابقتين.', service_error: 'خادم الحسابات غير متاح.' } as Record<string, string>,
+    errors: { rate_limited: 'محاولات كثيرة. انتظر دقيقة وحاول مرة أخرى.', invalid_name: 'اكتب الاسم بالكامل.', invalid_email: 'اكتب بريدًا إلكترونيًا صحيحًا.', weak_password: 'كلمة المرور يجب ألا تقل عن 8 أحرف.', email_exists: 'هذا البريد مسجل بالفعل. جرّب تسجيل الدخول.', invalid_invite: 'كود الدعوة غير صحيح لهذا الدور.', invite_not_configured: 'تسجيل هذا النوع غير مفعّل بعد. تواصل مع مسؤول المشروع.', invalid_role: 'نوع الحساب غير صحيح.', invalid_registration: 'تعذّر إنشاء الحساب. راجع البيانات وحاول مرة أخرى.', registration_failed: 'تعذّر إكمال التسجيل. حاول مرة أخرى.', password_mismatch: 'كلمتا المرور غير متطابقتين.', service_error: 'خدمة الحسابات غير متاحة حاليًا. حاول مرة أخرى بعد قليل.', service_unavailable: 'خدمة الحسابات وقاعدة البيانات غير متاحة حاليًا. حاول مرة أخرى بعد قليل.' } as Record<string, string>,
   } : {
     eyebrow: 'ROLE-BASED ACCESS', title: 'Welcome to NEUROGRIP', subtitle: 'Choose your account type and sign in to your own workspace.',
     patient: 'Patient', patientDesc: 'Learning, practice, and hand status', doctor: 'Doctor', doctorDesc: 'Cases, reports, and clinical follow-up',
@@ -312,7 +324,7 @@ function LoginScreen({ language, theme, onLanguageChange, onThemeChange, onLogin
     language: 'العربية', themeLight: 'Light', themeDark: 'Dark',
     serviceError: 'The account service is temporarily unavailable. Please try again shortly.',
     loading: 'Please wait...', inviteHint: 'Doctor and Developer registrations require an invitation code from the project administrator.',
-    errors: { rate_limited: 'Too many attempts. Wait one minute and try again.', invalid_name: 'Enter your full name.', invalid_email: 'Enter a valid email address.', weak_password: 'Password must be at least 8 characters.', email_exists: 'This email is already registered. Try signing in.', invalid_invite: 'The invitation code is not valid for this role.', invite_not_configured: 'Registration for this role is not configured yet. Contact the project administrator.', invalid_role: 'The selected account type is invalid.', invalid_registration: 'Could not create the account. Check the details and try again.', registration_failed: 'Registration could not be completed. Please try again.', password_mismatch: 'The passwords do not match.', service_error: 'The account server is unavailable.' } as Record<string, string>,
+    errors: { rate_limited: 'Too many attempts. Wait one minute and try again.', invalid_name: 'Enter your full name.', invalid_email: 'Enter a valid email address.', weak_password: 'Password must be at least 8 characters.', email_exists: 'This email is already registered. Try signing in.', invalid_invite: 'The invitation code is not valid for this role.', invite_not_configured: 'Registration for this role is not configured yet. Contact the project administrator.', invalid_role: 'The selected account type is invalid.', invalid_registration: 'Could not create the account. Check the details and try again.', registration_failed: 'Registration could not be completed. Please try again.', password_mismatch: 'The passwords do not match.', service_error: 'The account service is temporarily unavailable.', service_unavailable: 'The account service or database is temporarily unavailable. Please try again shortly.' } as Record<string, string>,
   }
   const chooseRole = (nextRole: UserRole) => {
     setRole(nextRole)
