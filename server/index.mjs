@@ -343,7 +343,7 @@ const server = http.createServer(async (request, response) => {
     if (isLoginRateLimited(request)) return sendJson(response, 429, { code: 'rate_limited' })
     const body = await readJson(request)
     const avatar = typeof body.avatar === 'string' ? body.avatar : ''
-    const match = avatar.match(/^data:image\\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/)
+    const match = avatar.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/)
     if (!match || avatar.length > 220000) return sendJson(response, 400, { code: 'invalid_avatar' })
     const bytes = Buffer.from(match[1], 'base64')
     if (bytes.length < 100 || bytes.length > 160000 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff ||
