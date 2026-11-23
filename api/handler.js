@@ -168,8 +168,16 @@ function escapeHtml(value) {
   })[character]);
 }
 
-function emailDeliveryConfigured() {
+function appsScriptEmailConfigured() {
+  return Boolean(process.env.GOOGLE_APPS_SCRIPT_URL && process.env.GOOGLE_APPS_SCRIPT_SECRET);
+}
+
+function resendEmailConfigured() {
   return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+}
+
+function emailDeliveryConfigured() {
+  return appsScriptEmailConfigured() || resendEmailConfigured();
 }
 
 async function sendAuthEmail({ to, subject, html, text }) {
@@ -178,6 +186,49 @@ async function sendAuthEmail({ to, subject, html, text }) {
     error.code = "email_not_configured";
     throw error;
   }
+
+  if (appsScriptEmailConfigured()) {
+    const scriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL.trim();
+    if (!scriptUrl.startsWith("https://script.google.com/macros/s/") || !scriptUrl.endsWith("/exec")) {
+      const error = new Error("Google Apps Script mailer URL is invalid.");
+      error.code = "email_delivery_failed";
+      throw error;
+    }
+
+    let response;
+    let result;
+    try {
+      response = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          secret: process.env.GOOGLE_APPS_SCRIPT_SECRET,
+          to,
+          subject,
+          html,
+          text,
+        }),
+        redirect: "follow",
+        signal: AbortSignal.timeout(20000),
+      });
+      result = await response.json();
+    } catch (cause) {
+      console.error("[neurogrip-email] Google Apps Script request failed", cause && cause.message ? cause.message : "Unknown error");
+      const error = new Error("The email provider could not be reached.");
+      error.code = "email_delivery_failed";
+      throw error;
+    }
+
+    if (!response.ok || !result || result.ok !== true) {
+      const providerCode = result && typeof result.code === "string" ? result.code : "script_rejected";
+      console.error("[neurogrip-email] Google Apps Script rejected delivery", response.status, providerCode);
+      const error = new Error("Google Apps Script could not send the message.");
+      error.code = "email_delivery_failed";
+      throw error;
+    }
+    return;
+  }
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -194,7 +245,7 @@ async function sendAuthEmail({ to, subject, html, text }) {
   });
   if (!response.ok) {
     const responseText = await response.text().catch(() => "");
-    console.error("[neurogrip-email] Delivery failed", response.status, responseText.slice(0, 240));
+    console.error("[neurogrip-email] Resend delivery failed", response.status, responseText.slice(0, 240));
     const error = new Error("The email provider rejected the message.");
     error.code = "email_delivery_failed";
     throw error;
