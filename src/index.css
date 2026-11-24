@@ -2099,3 +2099,493 @@ body { color: #173744; font-size: 15px; line-height: 1.6; }
   .profile-photo-button, .profile-photo-remove { transition: none; }
   .profile-camera-panel { animation: none; }
 }
+
+
+/* ==========================================================================
+   NEUROGRIP — unified product UI polish
+   Keeps the existing React flows, brand palette, role workspaces and themes.
+   ========================================================================== */
+
+:root {
+  --ng-radius-sm: 10px;
+  --ng-radius-md: 14px;
+  --ng-radius-lg: 18px;
+  --ng-radius-xl: 22px;
+  --ng-focus: rgba(24, 184, 172, .28);
+  --ng-shadow-card: 0 8px 26px rgba(16, 43, 58, .045);
+  --ng-shadow-hover: 0 15px 34px rgba(16, 43, 58, .085);
+  --ng-panel-border: #e2ebef;
+}
+
+html {
+  scroll-padding-top: 88px;
+  scrollbar-gutter: stable;
+}
+
+body {
+  font-family: 'DM Sans', 'IBM Plex Sans Arabic', sans-serif;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--ng-focus);
+  outline-offset: 2px;
+}
+
+::selection {
+  color: #102b3a;
+  background: rgba(24, 184, 172, .22);
+}
+
+.app-shell {
+  min-height: 100dvh;
+  isolation: isolate;
+}
+
+.app-shell .sidebar {
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(181, 210, 216, .28) transparent;
+}
+
+.app-shell .brand-block {
+  flex: 0 0 auto;
+  padding-bottom: 24px;
+}
+
+.app-shell .brand-symbol {
+  border-radius: 17px;
+  box-shadow: 0 10px 26px rgba(24, 184, 172, .12), inset 0 1px rgba(255,255,255,.06);
+}
+
+.app-shell .nav-item {
+  min-height: 46px;
+  border-radius: 12px;
+  letter-spacing: -.05px;
+}
+
+.app-shell .nav-item:focus-visible {
+  outline-color: rgba(135, 238, 227, .6);
+  outline-offset: 1px;
+}
+
+.app-shell .nav-item.active {
+  box-shadow: 0 8px 22px rgba(16, 177, 171, .18), inset 0 1px rgba(255,255,255,.12);
+}
+
+.app-shell .sidebar-bottom {
+  flex: 0 0 auto;
+  min-height: 132px;
+}
+
+.app-shell .main-area {
+  min-width: 0;
+  min-height: 100dvh;
+}
+
+.app-shell .topbar {
+  height: 70px;
+  border-bottom-color: rgba(217, 230, 235, .82);
+  box-shadow: 0 3px 16px rgba(16, 43, 58, .025);
+}
+
+.app-shell .topbar-actions {
+  gap: 10px;
+}
+
+.app-shell .language-button,
+.app-shell .icon-button,
+.app-shell .avatar-button,
+.app-shell .theme-toggle-button {
+  border-radius: 11px;
+}
+
+.app-shell .language-button:focus-visible,
+.app-shell .icon-button:focus-visible,
+.app-shell .avatar-button:focus-visible,
+.app-shell .theme-toggle-button:focus-visible {
+  outline-color: rgba(24, 184, 172, .38);
+}
+
+.app-shell .page-wrap {
+  width: min(100%, 1660px);
+  padding: clamp(20px, 2.3vw, 34px) clamp(16px, 2.55vw, 38px) 20px;
+}
+
+.app-shell .page-content {
+  min-width: 0;
+  animation: ng-page-enter .28s ease both;
+}
+
+@keyframes ng-page-enter {
+  from { opacity: .65; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.app-shell .page-heading {
+  align-items: center;
+  margin: 2px 0 24px;
+}
+
+.app-shell .page-heading h1 {
+  font-size: clamp(25px, 2.05vw, 32px);
+  line-height: 1.2;
+  letter-spacing: -.8px;
+}
+
+.app-shell .page-heading p {
+  max-width: 760px;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.app-shell .heading-mark {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  box-shadow: inset 0 1px rgba(255,255,255,.8);
+}
+
+.app-shell .section-block {
+  margin-top: 26px;
+}
+
+.app-shell .section-heading {
+  margin-bottom: 13px;
+}
+
+.app-shell .section-heading h2,
+.app-shell .card-heading h2,
+.app-shell .featured-video-heading h2 {
+  font-size: clamp(16px, 1.35vw, 19px);
+  letter-spacing: -.25px;
+}
+
+.app-shell .welcome-hero {
+  min-height: 258px;
+  border-radius: 22px;
+  box-shadow: 0 12px 32px rgba(26, 102, 115, .065);
+}
+
+.app-shell .welcome-hero .primary-button {
+  min-height: 43px;
+  border-radius: 11px;
+  box-shadow: 0 8px 18px rgba(16, 157, 150, .18);
+}
+
+.app-shell .device-card,
+.app-shell .battery-card,
+.app-shell .quick-card,
+.app-shell .practice-promo,
+.app-shell .learning-overview,
+.app-shell .lesson-card,
+.app-shell .featured-video-card,
+.app-shell .movement-card,
+.app-shell .movement-detail,
+.app-shell .sessions-empty-card,
+.app-shell .profile-card,
+.app-shell .profile-side-note,
+.app-shell .settings-card,
+.app-shell .specialist-role-card,
+.app-shell .specialist-stat-card,
+.app-shell .specialist-panel,
+.app-shell .specialist-case-detail,
+.app-shell .support-summary-card,
+.app-shell .support-list-panel,
+.app-shell .support-detail-panel {
+  border-radius: var(--ng-radius-lg);
+  box-shadow: var(--ng-shadow-card);
+}
+
+.app-shell .device-card,
+.app-shell .battery-card,
+.app-shell .quick-card,
+.app-shell .practice-promo,
+.app-shell .learning-overview,
+.app-shell .lesson-card,
+.app-shell .featured-video-card,
+.app-shell .movement-card,
+.app-shell .movement-detail,
+.app-shell .profile-card,
+.app-shell .profile-side-note,
+.app-shell .settings-card,
+.app-shell .specialist-role-card,
+.app-shell .specialist-stat-card,
+.app-shell .specialist-panel,
+.app-shell .specialist-case-detail,
+.app-shell .support-summary-card,
+.app-shell .support-list-panel,
+.app-shell .support-detail-panel {
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.app-shell .quick-card:hover,
+.app-shell .lesson-card:hover,
+.app-shell .specialist-role-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ng-shadow-hover);
+}
+
+.app-shell .lesson-card {
+  min-height: 112px;
+  padding: 14px 17px;
+}
+
+.app-shell .lesson-card.lesson-done {
+  border-color: rgba(24, 184, 172, .34);
+  background: linear-gradient(105deg, #fff, #f5fcfb);
+}
+
+.app-shell .primary-button,
+.app-shell .outline-button,
+.app-shell .specialist-primary-button,
+.app-shell .specialist-ghost-button,
+.app-shell .support-primary-button,
+.app-shell .support-secondary-button,
+.app-shell .support-new-button,
+.app-shell .support-forward-button {
+  min-height: 40px;
+  border-radius: 11px;
+  font-weight: 750;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.app-shell .primary-button:hover:not(:disabled),
+.app-shell .specialist-primary-button:hover:not(:disabled),
+.app-shell .support-primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 9px 22px rgba(16, 157, 150, .2);
+}
+
+.app-shell .primary-button:active:not(:disabled),
+.app-shell .specialist-primary-button:active:not(:disabled),
+.app-shell .support-primary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.app-shell button:disabled {
+  cursor: not-allowed;
+}
+
+.app-shell input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.app-shell select,
+.app-shell textarea {
+  border-radius: 10px;
+}
+
+.app-shell input:not([type='checkbox']):not([type='radio']):not([type='range']):focus,
+.app-shell select:focus,
+.app-shell textarea:focus {
+  border-color: #65bdb6;
+  box-shadow: 0 0 0 3px rgba(24, 184, 172, .1);
+}
+
+.app-shell .notification-popover {
+  border-radius: 16px;
+  box-shadow: 0 22px 56px rgba(16, 43, 58, .17);
+}
+
+.app-shell .notification-item {
+  min-height: 68px;
+  text-align: start;
+}
+
+.app-shell .profile-layout {
+  align-items: start;
+  gap: 18px;
+}
+
+.app-shell .profile-card {
+  padding: clamp(17px, 2vw, 25px);
+}
+
+.app-shell .profile-security-card {
+  gap: 19px;
+}
+
+.app-shell .profile-password-form input {
+  min-height: 44px;
+}
+
+.app-shell .specialist-portal {
+  gap: 20px;
+}
+
+.app-shell .specialist-workspace-heading h1,
+.app-shell .specialist-page-heading h1 {
+  font-size: clamp(25px, 2.05vw, 32px);
+  letter-spacing: -.75px;
+}
+
+.app-shell .specialist-tabs {
+  gap: 7px;
+  padding: 6px;
+  border-radius: 14px;
+}
+
+.app-shell .specialist-tabs button {
+  min-height: 41px;
+  border-radius: 10px;
+}
+
+.app-shell .specialist-panel,
+.app-shell .specialist-case-detail {
+  padding: clamp(15px, 1.8vw, 22px);
+}
+
+.app-shell .specialist-stats-grid {
+  gap: 13px;
+}
+
+.app-shell .specialist-stat-card {
+  min-height: 132px;
+  padding: 16px;
+}
+
+.app-shell .specialist-case-row {
+  border-radius: 12px;
+}
+
+.app-shell .support-center {
+  gap: 20px;
+}
+
+.app-shell .support-heading {
+  align-items: center;
+  gap: 16px;
+}
+
+.app-shell .support-layout {
+  gap: 16px;
+}
+
+.app-shell .support-list-panel,
+.app-shell .support-detail-panel {
+  border-radius: 17px;
+}
+
+.app-shell .support-ticket-item {
+  min-height: 88px;
+  padding: 15px 16px;
+  text-align: start;
+}
+
+.app-shell .support-ticket-item.selected {
+  box-shadow: inset 3px 0 #18a89f;
+}
+
+.app-shell .support-create-form,
+.app-shell .support-detail-panel {
+  border-radius: 0 0 16px 16px;
+}
+
+.app-shell .page-footer {
+  min-height: 48px;
+  margin-top: 14px;
+  border-top: 1px solid rgba(226, 235, 239, .85);
+}
+
+.app-shell.theme-dark .page-footer {
+  border-top-color: #263c47;
+}
+
+.app-shell.theme-dark .lesson-card.lesson-done {
+  border-color: #315b58;
+  background: linear-gradient(105deg, #142630, #183439);
+}
+
+.app-shell.theme-dark .welcome-hero {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .2);
+}
+
+.app-shell.theme-dark .notification-popover {
+  box-shadow: 0 22px 56px rgba(0, 0, 0, .42);
+}
+
+.app-shell.theme-dark .profile-card,
+.app-shell.theme-dark .profile-side-note,
+.app-shell.theme-dark .settings-card,
+.app-shell.theme-dark .specialist-role-card,
+.app-shell.theme-dark .specialist-stat-card,
+.app-shell.theme-dark .specialist-panel,
+.app-shell.theme-dark .specialist-case-detail,
+.app-shell.theme-dark .support-summary-card,
+.app-shell.theme-dark .support-list-panel,
+.app-shell.theme-dark .support-detail-panel {
+  box-shadow: 0 9px 28px rgba(0, 0, 0, .17);
+}
+
+@media (min-width: 1500px) {
+  .app-shell .page-wrap { padding-right: 42px; padding-left: 42px; }
+  .app-shell .dashboard-hero-grid { gap: 16px 20px; }
+  .app-shell .quick-grid { gap: 16px; }
+}
+
+@media (max-width: 1250px) {
+  .app-shell .sidebar { flex-basis: 238px; width: 238px; }
+  .app-shell .page-wrap { padding-right: 24px; padding-left: 24px; }
+}
+
+@media (max-width: 1020px) {
+  .app-shell .topbar { padding-right: 20px; padding-left: 20px; }
+  .app-shell .page-wrap { padding-right: 20px; padding-left: 20px; }
+  .app-shell .dashboard-hero-grid { gap: 12px; }
+}
+
+@media (max-width: 760px) {
+  .app-shell .topbar {
+    height: 62px;
+    padding-inline: 14px;
+  }
+  .app-shell .topbar-actions { gap: 7px; }
+  .app-shell .page-wrap { padding: 18px 15px 14px; }
+  .app-shell .page-heading { align-items: flex-start; margin-bottom: 19px; }
+  .app-shell .page-heading h1 { font-size: 25px; }
+  .app-shell .page-heading p { font-size: 12px; }
+  .app-shell .heading-mark { width: 42px; height: 42px; flex-basis: 42px; }
+  .app-shell .section-block { margin-top: 22px; }
+  .app-shell .specialist-stats-grid { gap: 9px; }
+  .app-shell .specialist-stat-card { min-height: 116px; }
+  .app-shell .support-layout { gap: 12px; }
+  .app-shell .support-summary-grid { gap: 9px; }
+  .app-shell .profile-layout { gap: 13px; }
+  .app-shell .page-footer { flex-wrap: wrap; gap: 8px 16px; }
+}
+
+@media (max-width: 520px) {
+  .app-shell .topbar { padding-inline: 10px; }
+  .app-shell .topbar-actions { gap: 5px; }
+  .app-shell .topbar .language-button { min-width: 76px; }
+  .app-shell .page-wrap { padding-inline: 12px; }
+  .app-shell .page-heading h1 { font-size: 23px; }
+  .app-shell .welcome-hero { border-radius: 18px; }
+  .app-shell .quick-card { border-radius: 14px; }
+  .app-shell .specialist-tabs { border-radius: 12px; }
+  .app-shell .support-heading-icon { width: 44px; height: 44px; flex-basis: 44px; }
+  .app-shell .support-summary-card { border-radius: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .page-content { animation: none; }
+  .app-shell .quick-card,
+  .app-shell .lesson-card,
+  .app-shell .specialist-role-card,
+  .app-shell .primary-button,
+  .app-shell .specialist-primary-button,
+  .app-shell .support-primary-button {
+    transition: none !important;
+  }
+}
